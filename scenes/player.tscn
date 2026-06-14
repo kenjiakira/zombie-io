@@ -1,0 +1,26 @@
+[gd_scene format=3 uid="uid://co542xv2vy7bk"]
+
+[ext_resource type="Script" uid="uid://u126roel8imi" path="res://scripts/player.gd" id="1_3vyb7"]
+[ext_resource type="PackedScene" uid="uid://dou2gcl338s7q" path="res://scenes/bullet.tscn" id="2_g2els"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_g2els"]
+radius = 14.0
+
+[node name="Player" type="CharacterBody2D" unique_id=731466206]
+collision_mask = 26
+script = ExtResource("1_3vyb7")
+bullet_scene = ExtResource("2_g2els")
+
+[node name="Body" type="Polygon2D" parent="." unique_id=1445503995]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1663831636]
+shape = SubResource("CircleShape2D_g2els")
+
+[node name="ShootTimer" type="Timer" parent="." unique_id=632807235]
+wait_time = 0.45
+autostart = true
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=987076509]
+position_smoothing_enabled = true
+
+[connection signal="timeout" from="ShootTimer" to="." method="_on_shoot_timer_timeout"]

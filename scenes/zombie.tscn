@@ -1,0 +1,36 @@
+[gd_scene format=3 uid="uid://743ykr2pe8ym"]
+
+[ext_resource type="Script" uid="uid://b8iksv2hoo4xh" path="res://scripts/zombie.gd" id="1_1vlb3"]
+[ext_resource type="PackedScene" uid="uid://dhyajas222tc4" path="res://scenes/exp_gem.tscn" id="2_httt1"]
+[ext_resource type="PackedScene" uid="uid://cuc7r18lk457x" path="res://scenes/death_effect.tscn" id="3_xepks"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_httt1"]
+radius = 15.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_xepks"]
+radius = 38.0
+
+[node name="Zombie" type="CharacterBody2D" unique_id=1749835730]
+collision_layer = 2
+collision_mask = 3
+script = ExtResource("1_1vlb3")
+exp_gem_scene = ExtResource("2_httt1")
+death_effect_scene = ExtResource("3_xepks")
+
+[node name="Body" type="Polygon2D" parent="." unique_id=1411216083]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=681189229]
+shape = SubResource("CircleShape2D_httt1")
+
+[node name="AttackArea" type="Area2D" parent="." unique_id=80831915]
+collision_layer = 16
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="AttackArea" unique_id=167777921]
+shape = SubResource("CircleShape2D_xepks")
+
+[node name="DamageTimer" type="Timer" parent="." unique_id=682375347]
+wait_time = 0.6
+autostart = true
+
+[connection signal="body_entered" from="AttackArea" to="." method="_on_attack_area_body_entered"]
+[connection signal="timeout" from="DamageTimer" to="." method="_on_damage_timer_timeout"]

@@ -1,0 +1,37 @@
+[gd_scene format=3 uid="uid://ds5h6mlaclxi1"]
+
+[ext_resource type="Script" uid="uid://ji3x3uhs8kth" path="res://scripts/main.gd" id="1_0wfyh"]
+[ext_resource type="PackedScene" uid="uid://743ykr2pe8ym" path="res://scenes/zombie.tscn" id="2_jyhfs"]
+[ext_resource type="PackedScene" uid="uid://co542xv2vy7bk" path="res://scenes/player.tscn" id="2_sugp2"]
+
+[node name="Main" type="Node2D" unique_id=1500764607]
+script = ExtResource("1_0wfyh")
+zombie_scene = ExtResource("2_jyhfs")
+
+[node name="Player" parent="." unique_id=731466206 instance=ExtResource("2_sugp2")]
+
+[node name="SpawnTimer" type="Timer" parent="." unique_id=753735374]
+wait_time = 1.2
+autostart = true
+
+[node name="ZombieContainer" type="Node2D" parent="." unique_id=1827364519]
+
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=2365256]
+
+[node name="HPBar" type="ProgressBar" parent="CanvasLayer" unique_id=211705572]
+offset_right = 4.0
+offset_bottom = 27.0
+
+[node name="ScoreLabel" type="Label" parent="CanvasLayer" unique_id=1794261447]
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="LevelLabel" type="Label" parent="CanvasLayer" unique_id=657202501]
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="HPText" type="Label" parent="CanvasLayer" unique_id=1239415284]
+offset_right = 40.0
+offset_bottom = 23.0
+
+[connection signal="timeout" from="SpawnTimer" to="." method="_on_spawn_timer_timeout"]

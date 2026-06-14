@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://dhyajas222tc4"]
+
+[ext_resource type="Script" uid="uid://be8a4o1tphcr6" path="res://scripts/exp_gem.gd" id="1_gfcje"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_gfcje"]
+radius = 9.0
+
+[node name="ExpGem" type="Area2D" unique_id=907202122]
+collision_layer = 8
+script = ExtResource("1_gfcje")
+
+[node name="Body" type="Polygon2D" parent="." unique_id=1853206496]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1999857377]
+shape = SubResource("CircleShape2D_gfcje")

@@ -1,0 +1,8 @@
+[gd_scene format=3 uid="uid://cuc7r18lk457x"]
+
+[ext_resource type="Script" uid="uid://cfvlewd8dpabn" path="res://scripts/death_effect.gd" id="1_0eoe3"]
+
+[node name="DeathEffect" type="Node2D" unique_id=75205372]
+script = ExtResource("1_0eoe3")
+
+[node name="Body" type="Polygon2D" parent="." unique_id=231365763]
