@@ -8,9 +8,7 @@ const WEAPON_COLORS := {
 }
 
 @export var weapon_id: String = "pistol"
-@export var attract_distance: float = 100.0
-@export var collect_distance: float = 22.0
-@export var move_speed: float = 180.0
+@export var collect_distance: float = 20.0
 
 @onready var body: Polygon2D = $Body
 
@@ -33,13 +31,7 @@ func _physics_process(delta):
 	if player == null or not is_instance_valid(player):
 		return
 
-	var distance = global_position.distance_to(player.global_position)
-
-	if distance <= attract_distance:
-		var direction = (player.global_position - global_position).normalized()
-		global_position += direction * move_speed * delta
-
-	if distance <= collect_distance:
+	if global_position.distance_to(player.global_position) <= collect_distance:
 		collect()
 
 func _setup_visual():
