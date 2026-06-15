@@ -4,14 +4,17 @@ extends Node2D
 @export var boss_scene: PackedScene
 
 @onready var player = $Player
+@onready var wave_manager = $WaveManager
 @onready var zombie_container = $ZombieContainer
-@onready var spawn_timer: Timer = $SpawnTimer
 @onready var game_over_menu = $CanvasLayer/GameOverPanel
 @onready var upgrade_menu = $CanvasLayer/UpgradeMenu
 
 @onready var hp_bar: ProgressBar = $CanvasLayer/HPBar
 @onready var hp_text: Label = $CanvasLayer/HPText
 @onready var weapon_text: Label = $CanvasLayer/WeaponLabel
+@onready var wave_text: Label = $CanvasLayer/WaveLabel
+@onready var time_text: Label = $CanvasLayer/TimeLabel
+@onready var enemies_text: Label = $CanvasLayer/EnemiesLabel
 @onready var score_label: Label = $CanvasLayer/ScoreLabel
 @onready var level_label: Label = $CanvasLayer/LevelLabel
 
@@ -20,13 +23,6 @@ var exp: int = 0
 var level: int = 1
 var exp_to_next_level: int = 8
 var upgrade_points: int = 0
-var wave: int = 1
-var wave_spawned: int = 0
-var wave_alive: int = 0
-var wave_transitioning: bool = false
-var current_wave_config: Dictionary = {}
-
-const WAVE_INTERMISSION: float = 2.0
 
 const UPGRADE_POOL = [
 	{
@@ -65,6 +61,14 @@ func _ready():
 		if player.has_signal("weapon_changed"):
 			player.weapon_changed.connect(_on_player_weapon_changed)
 
+	if wave_manager != null:
+		wave_manager.wave_changed.connect(_on_wave_changed)
+		wave_manager.time_changed.connect(_on_wave_time_changed)
+		wave_manager.enemies_changed.connect(_on_wave_enemies_changed)
+		wave_manager.spawn_zombie_requested.connect(_on_wave_spawn_zombie_requested)
+		wave_manager.spawn_boss_requested.connect(_on_wave_spawn_boss_requested)
+		wave_manager.start()
+
 	if upgrade_menu != null:
 		upgrade_menu.upgrade_selected.connect(_on_upgrade_selected)
 		upgrade_menu.set_upgrade_points(upgrade_points)
@@ -72,222 +76,69 @@ func _ready():
 	if game_over_menu != null:
 		game_over_menu.restart_pressed.connect(_on_restart_pressed)
 
-	if spawn_timer != null:
-		if not spawn_timer.timeout.is_connected(_on_spawn_timer_timeout):
-			spawn_timer.timeout.connect(_on_spawn_timer_timeout)
-
-		spawn_timer.one_shot = false
-
-	_start_wave(1)
 	update_ui()
 
-func _on_spawn_timer_timeout():
-	if wave_transitioning:
-		return
+func _on_wave_changed(_wave: int):
+	update_ui()
 
-	if wave_spawned >= int(current_wave_config.get("total_zombies", 0)):
-		if spawn_timer != null:
-			spawn_timer.stop()
+func _on_wave_time_changed(_time_text: String):
+	if time_text != null:
+		time_text.text = "Time: " + _time_text
 
-		if wave_alive <= 0:
-			_queue_next_wave()
+func _on_wave_enemies_changed(alive: int, _total: int):
+	if enemies_text != null:
+		enemies_text.text = "Enemies: " + str(alive)
 
-		return
+func _on_wave_spawn_zombie_requested(zombie_type: String):
+	spawn_zombie_of_type(zombie_type)
 
-	spawn_zombie()
+func _on_wave_spawn_boss_requested(boss_type: String):
+	spawn_boss_of_type(boss_type)
 
-func spawn_zombie():
-	if zombie_scene == null:
-		print("LỖI: Chưa gán Zombie Scene trong Inspector của Main")
-		return
-
+func _get_spawn_position(spawn_distance: float) -> Vector2:
 	if player == null:
-		print("LỖI: Không tìm thấy Player")
-		return
+		return Vector2.ZERO
 
-	var zombie = zombie_scene.instantiate()
-
-	var spawn_distance = 520
 	var random_angle = randf() * TAU
 	var spawn_direction = Vector2(cos(random_angle), sin(random_angle))
-	var spawn_position = player.global_position + spawn_direction * spawn_distance
-	var zombie_type = _pick_zombie_type()
+	return player.global_position + spawn_direction * spawn_distance
 
-	zombie.global_position = spawn_position
-	if zombie.has_method("configure_zombie"):
-		zombie.configure_zombie(zombie_type)
-
-	zombie_container.add_child(zombie)
-	wave_spawned += 1
-	wave_alive += 1
-
-	if wave_spawned >= int(current_wave_config.get("total_zombies", 0)) and spawn_timer != null:
-		spawn_timer.stop()
-
-func spawn_zombie_of_type(zombie_type: String, spawn_position: Vector2):
-	if zombie_scene == null:
+func spawn_zombie_of_type(zombie_type: String, spawn_position: Vector2 = Vector2.INF):
+	if zombie_scene == null or player == null:
 		return
 
 	var zombie = zombie_scene.instantiate()
-	zombie.global_position = spawn_position
 
+	if spawn_position == Vector2.INF:
+		spawn_position = _get_spawn_position(520.0)
+
+	zombie.global_position = spawn_position
 	if zombie.has_method("configure_zombie"):
 		zombie.configure_zombie(zombie_type)
 
 	zombie_container.add_child(zombie)
-	wave_alive += 1
 
-func _pick_zombie_type() -> String:
-	var weights: Dictionary = current_wave_config.get("weights", {})
-	return _pick_weighted_zombie_type(weights)
+	if wave_manager != null and wave_manager.has_method("notify_enemy_spawned"):
+		wave_manager.notify_enemy_spawned()
 
-func _pick_weighted_zombie_type(weights: Dictionary) -> String:
-	if weights.is_empty():
-		return "normal"
-
-	var total_weight := 0
-	for value in weights.values():
-		total_weight += int(value)
-
-	if total_weight <= 0:
-		return "normal"
-
-	var roll := randi() % total_weight
-	var cumulative := 0
-
-	for type_id in weights.keys():
-		cumulative += int(weights[type_id])
-		if roll < cumulative:
-			return String(type_id)
-
-	return "normal"
-
-func _get_wave_config(p_wave: int) -> Dictionary:
-	match p_wave:
-		1:
-			return {
-				"total_zombies": 6,
-				"spawn_interval": 1.15,
-				"weights": {"normal": 100}
-			}
-		2:
-			return {
-				"total_zombies": 8,
-				"spawn_interval": 1.0,
-				"weights": {"normal": 70, "fast": 30}
-			}
-		3:
-			return {
-				"total_zombies": 10,
-				"spawn_interval": 0.9,
-				"weights": {"normal": 60, "fast": 40}
-			}
-		4:
-			return {
-				"total_zombies": 12,
-				"spawn_interval": 0.82,
-				"weights": {"normal": 45, "fast": 35, "tank": 20}
-			}
-		5:
-			return {
-				"total_zombies": 14,
-				"spawn_interval": 0.76,
-				"weights": {"normal": 50, "fast": 30, "tank": 20},
-				"boss_type": "mini_boss"
-			}
-		6:
-			return {
-				"total_zombies": 16,
-				"spawn_interval": 0.7,
-				"weights": {"normal": 35, "fast": 35, "tank": 30}
-			}
-		7:
-			return {
-				"total_zombies": 18,
-				"spawn_interval": 0.66,
-				"weights": {"normal": 30, "fast": 35, "tank": 35}
-			}
-		8:
-			return {
-				"total_zombies": 20,
-				"spawn_interval": 0.62,
-				"weights": {"normal": 25, "fast": 35, "tank": 40}
-			}
-		9:
-			return {
-				"total_zombies": 22,
-				"spawn_interval": 0.58,
-				"weights": {"normal": 20, "fast": 35, "tank": 45}
-			}
-		10:
-			return {
-				"total_zombies": 24,
-				"spawn_interval": 0.54,
-				"weights": {"normal": 20, "fast": 30, "tank": 50},
-				"boss_type": "boss"
-			}
-		_:
-			var extra_wave = p_wave - 10
-			return {
-				"total_zombies": 24 + extra_wave * 4,
-				"spawn_interval": maxf(0.35, 0.54 - extra_wave * 0.03),
-				"weights": {"normal": 15, "fast": 30, "tank": 55}
-			}
-
-func _start_wave(p_wave: int):
-	wave = p_wave
-	wave_spawned = 0
-	wave_alive = 0
-	wave_transitioning = false
-	current_wave_config = _get_wave_config(wave)
-
-	if spawn_timer != null:
-		spawn_timer.wait_time = float(current_wave_config.get("spawn_interval", 1.0))
-		spawn_timer.start()
-
-	_spawn_wave_boss()
-	update_ui()
-
-func _spawn_wave_boss():
-	var boss_type = String(current_wave_config.get("boss_type", ""))
-
-	if boss_type == "" or boss_scene == null or player == null:
+func spawn_boss_of_type(boss_type: String):
+	if boss_scene == null or player == null:
 		return
 
 	var boss = boss_scene.instantiate()
-	var spawn_distance = 420
-	var spawn_angle = randf() * TAU
-	var spawn_direction = Vector2(cos(spawn_angle), sin(spawn_angle))
-	var spawn_position = player.global_position + spawn_direction * spawn_distance
-
-	boss.global_position = spawn_position
+	boss.global_position = _get_spawn_position(420.0)
 
 	if boss.has_method("configure_boss"):
 		boss.configure_boss(boss_type)
 
 	zombie_container.add_child(boss)
-	wave_alive += 1
 
-func _queue_next_wave():
-	if wave_transitioning:
-		return
-
-	wave_transitioning = true
-	if spawn_timer != null:
-		spawn_timer.stop()
-
-	await get_tree().create_timer(WAVE_INTERMISSION).timeout
-
-	if not is_inside_tree() or player == null:
-		return
-
-	_start_wave(wave + 1)
+	if wave_manager != null and wave_manager.has_method("notify_enemy_spawned"):
+		wave_manager.notify_enemy_spawned()
 
 func notify_zombie_died():
-	wave_alive = max(wave_alive - 1, 0)
-
-	if wave_alive == 0 and wave_spawned >= int(current_wave_config.get("total_zombies", 0)):
-		_queue_next_wave()
+	if wave_manager != null and wave_manager.has_method("notify_enemy_died"):
+		wave_manager.notify_enemy_died()
 
 func add_score(amount: int):
 	score += amount
@@ -306,8 +157,10 @@ func level_up():
 	level += 1
 	exp_to_next_level += 6
 	upgrade_points += 1
+
 	if upgrade_menu != null:
 		upgrade_menu.set_upgrade_points(upgrade_points)
+
 	update_ui()
 
 func _on_upgrade_selected(upgrade_id: String):
@@ -319,6 +172,7 @@ func _on_upgrade_selected(upgrade_id: String):
 
 	if upgrade_menu != null:
 		upgrade_menu.set_upgrade_points(upgrade_points)
+
 	update_ui()
 
 func _apply_upgrade(upgrade_id: String):
@@ -344,9 +198,6 @@ func _apply_upgrade(upgrade_id: String):
 			return
 
 func _on_player_died():
-	if spawn_timer != null:
-		spawn_timer.stop()
-
 	if game_over_menu != null:
 		game_over_menu.show_game_over(score, level)
 
@@ -356,7 +207,7 @@ func _on_restart_pressed():
 	get_tree().paused = false
 	get_tree().reload_current_scene()
 
-func _on_player_hp_changed(current_hp, max_hp):
+func _on_player_hp_changed(_current_hp, _max_hp):
 	update_ui()
 
 func _on_player_weapon_changed(_weapon_id, _weapon_name):
@@ -370,7 +221,17 @@ func update_ui():
 	hp_bar.value = player.hp
 
 	hp_text.text = "HP: " + str(player.hp) + "/" + str(player.max_hp)
+
 	if player.has_method("get_current_weapon_name"):
 		weapon_text.text = "Weapon: " + player.get_current_weapon_name()
+
+	if wave_manager != null:
+		if wave_text != null:
+			wave_text.text = "Wave: " + str(wave_manager.get_wave())
+		if time_text != null:
+			time_text.text = "Time: " + wave_manager.get_time_text()
+		if enemies_text != null:
+			enemies_text.text = "Enemies: " + str(wave_manager.get_alive_count())
+
 	score_label.text = "Score: " + str(score)
-	level_label.text = "Wave: " + str(wave) + "  Lv: " + str(level) + "  EXP: " + str(exp) + "/" + str(exp_to_next_level)
+	level_label.text = "Lv: " + str(level) + "  EXP: " + str(exp) + "/" + str(exp_to_next_level)

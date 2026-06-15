@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/brute_boss.tscn" id="3_brute"]
 [ext_resource type="Script" uid="uid://6nuhtmeqcygg" path="res://scripts/game_over_menu.gd" id="4_jyhfs"]
 [ext_resource type="Script" uid="uid://1rycppn2vp6o" path="res://scripts/upgrade_menu.gd" id="5_tbgi4"]
+[ext_resource type="Script" path="res://scripts/wave_manager.gd" id="6_wave"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sugp2"]
 bg_color = Color(1, 0.33682758, 0.3282704, 1)
@@ -17,9 +18,8 @@ boss_scene = ExtResource("3_brute")
 
 [node name="Player" parent="." unique_id=731466206 instance=ExtResource("2_sugp2")]
 
-[node name="SpawnTimer" type="Timer" parent="." unique_id=753735374]
-wait_time = 1.2
-autostart = true
+[node name="WaveManager" type="Node" parent="." unique_id=753735374]
+script = ExtResource("6_wave")
 
 [node name="ZombieContainer" type="Node2D" parent="." unique_id=1827364519]
 
@@ -46,7 +46,7 @@ offset_left = 16.0
 offset_top = 72.0
 offset_right = 220.0
 offset_bottom = 96.0
-text = "Level: 1  EXP: 0/5"
+text = "Lv: 1  EXP: 0/8"
 
 [node name="HPText" type="Label" parent="CanvasLayer" unique_id=1239415284]
 layout_mode = 0
@@ -64,29 +64,45 @@ offset_right = 260.0
 offset_bottom = 144.0
 text = "Weapon: Pistol"
 
-[node name="TimeLabel" type="Label" parent="CanvasLayer" unique_id=1095869472]
+[node name="WaveLabel" type="Label" parent="CanvasLayer" unique_id=212896521]
 layout_mode = 0
 offset_left = 16.0
 offset_top = 152.0
 offset_right = 220.0
 offset_bottom = 176.0
-text = "00:00"
+text = "Wave: 1"
 
-[node name="Label2" type="Label" parent="CanvasLayer" unique_id=645376041]
+[node name="TimeLabel" type="Label" parent="CanvasLayer" unique_id=1095869472]
 layout_mode = 0
 offset_left = 16.0
 offset_top = 184.0
 offset_right = 220.0
 offset_bottom = 208.0
+text = "Time: 00:00"
+
+[node name="Label2" type="Label" parent="CanvasLayer" unique_id=645376041]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 216.0
+offset_right = 220.0
+offset_bottom = 240.0
 text = "1=Pistol  2=Shotgun"
 
 [node name="Label3" type="Label" parent="CanvasLayer" unique_id=1114596358]
 layout_mode = 0
 offset_left = 16.0
-offset_top = 208.0
+offset_top = 240.0
 offset_right = 220.0
-offset_bottom = 232.0
+offset_bottom = 264.0
 text = "3=SMG  4=Rifle"
+
+[node name="EnemiesLabel" type="Label" parent="CanvasLayer" unique_id=295376041]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 268.0
+offset_right = 220.0
+offset_bottom = 292.0
+text = "Enemies: 0"
 
 [node name="GameOverPanel" type="Control" parent="CanvasLayer" unique_id=1868068729]
 visible = false
@@ -211,5 +227,3 @@ offset_left = 1030.0
 offset_top = 348.0
 offset_right = 1240.0
 offset_bottom = 400.0
-
-[connection signal="timeout" from="SpawnTimer" to="." method="_on_spawn_timer_timeout"]
