@@ -55,15 +55,25 @@ Player stats:
 - `speed`
 - `max_hp`
 - `damage`
-- `shoot_rate`
-- `bullet_speed`
-- `bullet_life_time`
+- weapon library with:
+  - `shoot_rate`
+  - `bullet_speed`
+  - `bullet_life_time`
+  - `projectile_count`
+  - `spread_degrees`
+
+Weapon behavior:
+- Default weapon is `pistol`
+- Weapons can be equipped with `equip_weapon(...)`
+- Weapons can be added with `add_weapon(...)`
+- Press `1`, `2`, `3`, `4` to switch between pistol, shotgun, SMG, and rifle
 
 Key behavior:
 - Moves with `move_left`, `move_right`, `move_up`, `move_down`
 - Auto-fires at the nearest zombie
 - Emits `hp_changed`
 - Emits `died` instead of reloading the scene directly
+- Shows current weapon in the HUD
 
 ### 3.3 [`scripts/zombie.gd`](./scripts/zombie.gd)
 
@@ -175,7 +185,8 @@ Key behavior:
 
 - Player movement
 - Auto-target shooting
-- Bullet damage, speed, and lifetime are upgradeable
+- Data-driven weapon system with pistol, shotgun, SMG, and rifle
+- Bullet damage, speed, spread, projectile count, and lifetime are weapon-based
 - Player HP, damage, speed, and firing rate are upgradeable
 - Zombie types: normal, fast, tank
 - Boss waves: mini boss on wave 5, full boss on wave 10

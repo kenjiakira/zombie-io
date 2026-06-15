@@ -18,6 +18,8 @@ const BOSS_TYPES := {
 		"summon_uses": 2,
 		"attack_interval": 2.4,
 		"recover_time": 0.45,
+		"weapon_drop_chance": 1.0,
+		"weapon_drop_weights": {"shotgun": 40, "smg": 35, "rifle": 25},
 		"color": Color(0.95, 0.45, 0.2),
 		"visual_scale": Vector2(1.55, 1.55),
 		"summon_types": ["normal", "normal", "fast"]
@@ -39,6 +41,8 @@ const BOSS_TYPES := {
 		"summon_uses": 4,
 		"attack_interval": 2.0,
 		"recover_time": 0.5,
+		"weapon_drop_chance": 1.0,
+		"weapon_drop_weights": {"shotgun": 20, "smg": 30, "rifle": 50},
 		"color": Color(0.95, 0.2, 0.2),
 		"visual_scale": Vector2(2.15, 2.15),
 		"summon_types": ["normal", "fast", "fast", "tank"]
@@ -47,6 +51,7 @@ const BOSS_TYPES := {
 
 @export var boss_type: String = "mini_boss"
 @export var exp_gem_scene: PackedScene
+@export var weapon_drop_scene: PackedScene
 @export var death_effect_scene: PackedScene
 
 @onready var body: Polygon2D = $Body
@@ -309,4 +314,43 @@ func die():
 		gem.global_position = global_position
 		main.add_child(gem)
 
+	_spawn_weapon_drop(main)
+
 	queue_free()
+
+func _spawn_weapon_drop(main: Node):
+	var boss_data = BOSS_TYPES.get(boss_type, BOSS_TYPES["mini_boss"])
+	var drop_chance = float(boss_data.get("weapon_drop_chance", 0.0))
+
+	if weapon_drop_scene == null or randf() > drop_chance:
+		return
+
+	var weapon_id = _pick_weapon_drop_id(boss_data.get("weapon_drop_weights", {}))
+	if weapon_id == "":
+		return
+
+	var drop = weapon_drop_scene.instantiate()
+	drop.global_position = global_position
+	drop.weapon_id = weapon_id
+	main.add_child(drop)
+
+func _pick_weapon_drop_id(weights: Dictionary) -> String:
+	if weights.is_empty():
+		return ""
+
+	var total_weight := 0
+	for value in weights.values():
+		total_weight += int(value)
+
+	if total_weight <= 0:
+		return ""
+
+	var roll := randi() % total_weight
+	var cumulative := 0
+
+	for weapon_id in weights.keys():
+		cumulative += int(weights[weapon_id])
+		if roll < cumulative:
+			return String(weapon_id)
+
+	return ""

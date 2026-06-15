@@ -11,6 +11,8 @@ const ZOMBIE_TYPES := {
 		"knockback_strength": 220.0,
 		"attack_cooldown": 0.8,
 		"attack_range": 32.0,
+		"weapon_drop_chance": 0.10,
+		"weapon_drop_weights": {"pistol": 60, "smg": 25, "shotgun": 15},
 		"visual_scale": Vector2.ONE,
 		"color": Color(0.25, 0.9, 0.35)
 	},
@@ -24,6 +26,8 @@ const ZOMBIE_TYPES := {
 		"knockback_strength": 180.0,
 		"attack_cooldown": 0.65,
 		"attack_range": 28.0,
+		"weapon_drop_chance": 0.12,
+		"weapon_drop_weights": {"pistol": 20, "smg": 45, "shotgun": 35},
 		"visual_scale": Vector2(0.9, 0.9),
 		"color": Color(0.9, 0.8, 0.25)
 	},
@@ -37,6 +41,8 @@ const ZOMBIE_TYPES := {
 		"knockback_strength": 300.0,
 		"attack_cooldown": 1.0,
 		"attack_range": 36.0,
+		"weapon_drop_chance": 0.18,
+		"weapon_drop_weights": {"smg": 15, "shotgun": 45, "rifle": 40},
 		"visual_scale": Vector2(1.2, 1.2),
 		"color": Color(0.75, 0.3, 0.85)
 	},
@@ -50,6 +56,8 @@ const ZOMBIE_TYPES := {
 		"knockback_strength": 360.0,
 		"attack_cooldown": 1.1,
 		"attack_range": 42.0,
+		"weapon_drop_chance": 1.0,
+		"weapon_drop_weights": {"shotgun": 35, "smg": 35, "rifle": 30},
 		"visual_scale": Vector2(1.55, 1.55),
 		"color": Color(0.95, 0.45, 0.2)
 	},
@@ -63,6 +71,8 @@ const ZOMBIE_TYPES := {
 		"knockback_strength": 480.0,
 		"attack_cooldown": 1.25,
 		"attack_range": 48.0,
+		"weapon_drop_chance": 1.0,
+		"weapon_drop_weights": {"shotgun": 20, "smg": 30, "rifle": 50},
 		"visual_scale": Vector2(2.1, 2.1),
 		"color": Color(0.95, 0.2, 0.2)
 	}
@@ -70,6 +80,7 @@ const ZOMBIE_TYPES := {
 
 @export var zombie_type: String = "normal"
 @export var exp_gem_scene: PackedScene
+@export var weapon_drop_scene: PackedScene
 @export var death_effect_scene: PackedScene
 
 @onready var body: Polygon2D = $Body
@@ -217,7 +228,47 @@ func die():
 		gem.global_position = global_position
 		main.add_child(gem)
 
+	_spawn_weapon_drop(main)
+
 	queue_free()
+
+func _spawn_weapon_drop(main: Node):
+	var zombie_data = ZOMBIE_TYPES.get(zombie_type, ZOMBIE_TYPES["normal"])
+	var drop_chance = float(zombie_data.get("weapon_drop_chance", 0.0))
+
+	if weapon_drop_scene == null or randf() > drop_chance:
+		return
+
+	var weapon_id = _pick_weapon_drop_id(zombie_data.get("weapon_drop_weights", {}))
+	if weapon_id == "":
+		return
+
+	var drop = weapon_drop_scene.instantiate()
+	drop.global_position = global_position
+	drop.weapon_id = weapon_id
+
+	main.add_child(drop)
+
+func _pick_weapon_drop_id(weights: Dictionary) -> String:
+	if weights.is_empty():
+		return ""
+
+	var total_weight := 0
+	for value in weights.values():
+		total_weight += int(value)
+
+	if total_weight <= 0:
+		return ""
+
+	var roll := randi() % total_weight
+	var cumulative := 0
+
+	for weapon_id in weights.keys():
+		cumulative += int(weights[weapon_id])
+		if roll < cumulative:
+			return String(weapon_id)
+
+	return ""
 
 func play_death_effect():
 	pass

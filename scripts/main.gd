@@ -7,22 +7,23 @@ extends Node2D
 @onready var zombie_container = $ZombieContainer
 @onready var spawn_timer: Timer = $SpawnTimer
 @onready var game_over_menu = $CanvasLayer/GameOverPanel
-@onready var upgrade_menu = $UpgradeMenu
+@onready var upgrade_menu = $CanvasLayer/UpgradeMenu
 
 @onready var hp_bar: ProgressBar = $CanvasLayer/HPBar
 @onready var hp_text: Label = $CanvasLayer/HPText
+@onready var weapon_text: Label = $CanvasLayer/WeaponLabel
 @onready var score_label: Label = $CanvasLayer/ScoreLabel
 @onready var level_label: Label = $CanvasLayer/LevelLabel
 
 var score: int = 0
 var exp: int = 0
 var level: int = 1
-var exp_to_next_level: int = 5
+var exp_to_next_level: int = 8
+var upgrade_points: int = 0
 var wave: int = 1
 var wave_spawned: int = 0
 var wave_alive: int = 0
 var wave_transitioning: bool = false
-var pending_upgrades: Array = []
 var current_wave_config: Dictionary = {}
 
 const WAVE_INTERMISSION: float = 2.0
@@ -61,9 +62,12 @@ func _ready():
 	if player != null:
 		player.hp_changed.connect(_on_player_hp_changed)
 		player.died.connect(_on_player_died)
+		if player.has_signal("weapon_changed"):
+			player.weapon_changed.connect(_on_player_weapon_changed)
 
 	if upgrade_menu != null:
 		upgrade_menu.upgrade_selected.connect(_on_upgrade_selected)
+		upgrade_menu.set_upgrade_points(upgrade_points)
 
 	if game_over_menu != null:
 		game_over_menu.restart_pressed.connect(_on_restart_pressed)
@@ -300,39 +304,21 @@ func add_exp(amount: int):
 func level_up():
 	exp -= exp_to_next_level
 	level += 1
-	exp_to_next_level += 4
+	exp_to_next_level += 6
+	upgrade_points += 1
+	if upgrade_menu != null:
+		upgrade_menu.set_upgrade_points(upgrade_points)
 	update_ui()
-	_show_upgrade_choices()
-
-func _show_upgrade_choices():
-	if upgrade_menu == null:
-		_apply_upgrade("player_speed")
-		update_ui()
-		return
-
-	pending_upgrades = _pick_upgrades(3)
-	upgrade_menu.show_upgrades(pending_upgrades)
-	get_tree().paused = true
-
-func _pick_upgrades(count: int) -> Array:
-	var available = UPGRADE_POOL.duplicate(true)
-	var choices: Array = []
-
-	while choices.size() < count and not available.is_empty():
-		var index = randi() % available.size()
-		choices.append(available[index])
-		available.remove_at(index)
-
-	return choices
 
 func _on_upgrade_selected(upgrade_id: String):
+	if upgrade_points <= 0:
+		return
+
 	_apply_upgrade(upgrade_id)
+	upgrade_points = max(upgrade_points - 1, 0)
 
 	if upgrade_menu != null:
-		upgrade_menu.hide_upgrades()
-
-	pending_upgrades.clear()
-	get_tree().paused = false
+		upgrade_menu.set_upgrade_points(upgrade_points)
 	update_ui()
 
 func _apply_upgrade(upgrade_id: String):
@@ -341,12 +327,14 @@ func _apply_upgrade(upgrade_id: String):
 
 	match upgrade_id:
 		"bullet_damage":
-			player.damage += 10
+			if player.has_method("upgrade_current_weapon_damage"):
+				player.upgrade_current_weapon_damage(10)
 		"bullet_speed":
-			player.bullet_speed += 120.0
+			if player.has_method("upgrade_current_weapon_speed"):
+				player.upgrade_current_weapon_speed(120.0)
 		"shoot_rate":
-			player.shoot_rate = maxf(0.12, player.shoot_rate - 0.05)
-			player.shoot_timer.wait_time = player.shoot_rate
+			if player.has_method("upgrade_current_weapon_fire_rate"):
+				player.upgrade_current_weapon_fire_rate(0.05)
 		"player_speed":
 			player.speed += 12
 		"max_hp":
@@ -358,9 +346,6 @@ func _apply_upgrade(upgrade_id: String):
 func _on_player_died():
 	if spawn_timer != null:
 		spawn_timer.stop()
-
-	if upgrade_menu != null:
-		upgrade_menu.hide_upgrades()
 
 	if game_over_menu != null:
 		game_over_menu.show_game_over(score, level)
@@ -374,6 +359,9 @@ func _on_restart_pressed():
 func _on_player_hp_changed(current_hp, max_hp):
 	update_ui()
 
+func _on_player_weapon_changed(_weapon_id, _weapon_name):
+	update_ui()
+
 func update_ui():
 	if player == null:
 		return
@@ -382,5 +370,7 @@ func update_ui():
 	hp_bar.value = player.hp
 
 	hp_text.text = "HP: " + str(player.hp) + "/" + str(player.max_hp)
+	if player.has_method("get_current_weapon_name"):
+		weapon_text.text = "Weapon: " + player.get_current_weapon_name()
 	score_label.text = "Score: " + str(score)
 	level_label.text = "Wave: " + str(wave) + "  Lv: " + str(level) + "  EXP: " + str(exp) + "/" + str(exp_to_next_level)
