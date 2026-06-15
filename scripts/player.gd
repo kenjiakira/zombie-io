@@ -5,6 +5,10 @@ signal died
 
 @export var speed: float = 230.0
 @export var max_hp: int = 100
+@export var damage: int = 25
+@export var shoot_rate: float = 0.45
+@export var bullet_speed: float = 650.0
+@export var bullet_life_time: float = 1.2
 @export var bullet_scene: PackedScene
 
 @onready var body: Polygon2D = $Body
@@ -19,6 +23,7 @@ func _ready():
 	hp = max_hp
 	add_to_group("player")
 	hp_changed.emit(hp, max_hp)
+	shoot_timer.wait_time = shoot_rate
 
 	setup_placeholder_visual()
 
@@ -73,7 +78,6 @@ func take_damage(amount: int):
 
 	if hp <= 0:
 		died.emit()
-		get_tree().reload_current_scene()
 
 func play_hurt_animation():
 	is_hurt_animating = true
@@ -95,7 +99,12 @@ func _on_shoot_timer_timeout():
 
 	var bullet = bullet_scene.instantiate()
 	bullet.global_position = global_position
-	bullet.direction = (target.global_position - global_position).normalized()
+	var direction = (target.global_position - global_position).normalized()
+
+	if bullet.has_method("configure"):
+		bullet.configure(direction, bullet_speed, damage, bullet_life_time)
+	else:
+		bullet.direction = direction
 
 	get_tree().current_scene.add_child(bullet)
 

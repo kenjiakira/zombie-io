@@ -1,51 +1,45 @@
 extends Area2D
 
-@export var exp_amount: int = 1
+@export var exp_value: int = 10
+@export var attract_distance: float = 130.0
+@export var collect_distance: float = 20.0
 @export var move_speed: float = 220.0
 
-@onready var body: Polygon2D = $Body
-
-var player = null
-var anim_time: float = 0.0
+var player: Node2D
 
 func _ready():
 	body_entered.connect(_on_body_entered)
-	setup_placeholder_visual()
 
 	var players = get_tree().get_nodes_in_group("player")
-	if players.size() > 0:
+	if not players.is_empty():
 		player = players[0]
 
-func setup_placeholder_visual():
-	body.polygon = PackedVector2Array([
-		Vector2(0, -10),
-		Vector2(8, 0),
-		Vector2(0, 10),
-		Vector2(-8, 0)
-	])
-
-	body.color = Color(0.5, 0.4, 1.0)
-
 func _physics_process(delta):
-	anim_time += delta
+	play_float_animation()
 
-	body.position.y = sin(anim_time * 5.0) * 3.0
-	body.rotation += delta * 2.0
-
-	if player == null:
+	if player == null or not is_instance_valid(player):
 		return
 
 	var distance = global_position.distance_to(player.global_position)
 
-	if distance < 140:
-		var dir = (player.global_position - global_position).normalized()
-		global_position += dir * move_speed * delta
+	if distance <= attract_distance:
+		var direction = (player.global_position - global_position).normalized()
+		global_position += direction * move_speed * delta
 
-func _on_body_entered(body_hit):
-	if body_hit.is_in_group("player"):
-		var main = get_tree().current_scene
+	if distance <= collect_distance:
+		collect()
 
-		if main.has_method("add_exp"):
-			main.add_exp(exp_amount)
+func play_float_animation():
+	rotation += 0.03
 
-		queue_free()
+func _on_body_entered(body):
+	if body.is_in_group("player"):
+		collect()
+
+func collect():
+	var main = get_tree().current_scene
+
+	if main != null and main.has_method("add_exp"):
+		main.add_exp(exp_value)
+
+	queue_free()

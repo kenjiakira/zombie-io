@@ -1,154 +1,205 @@
-# ZombieIO - Kiến Trúc và Tính Năng Hiện Có
+# ZombieIO - Game Architecture
 
-## 1. Tổng Quan
+## 1. Overview
 
-ZombieIO là một game 2D top-down trong Godot, nơi người chơi điều khiển nhân vật, tự động bắn đạn vào zombie gần nhất, tiêu diệt quái để nhận điểm và kinh nghiệm, sau đó tăng cấp để mạnh hơn.
+ZombieIO is a 2D top-down Godot game where the player moves, auto-shoots the nearest zombie, collects EXP gems, levels up, and picks upgrades.
 
-Project hiện chia theo 2 phần chính:
-- `scenes/`: chứa các scene của game
-- `scripts/`: chứa logic gameplay cho từng đối tượng
+Current project structure:
+- `scenes/`: Godot scenes
+- `scripts/`: gameplay logic
 
-## 2. Cấu Trúc Dự Án
-
-### 2.1 Scene chính
+## 2. Main Scenes
 
 - [`scenes/main.tscn`](./scenes/main.tscn)
-  - Scene gốc của game
-  - Chứa player, vùng sinh zombie, timer spawn, và UI
-
-### 2.2 Scene nhân vật và đối tượng
-
+  - Main game scene
+  - Contains the player, zombie spawner, world container, HUD, upgrade menu, and game over menu
 - [`scenes/player.tscn`](./scenes/player.tscn)
-  - Scene của người chơi
+  - Player scene
 - [`scenes/zombie.tscn`](./scenes/zombie.tscn)
-  - Scene của zombie
+  - Zombie scene
+- [`scenes/brute_boss.tscn`](./scenes/brute_boss.tscn)
+  - Boss scene for Brute Zombie
 - [`scenes/bullet.tscn`](./scenes/bullet.tscn)
-  - Scene của viên đạn
+  - Bullet scene
 - [`scenes/exp_gem.tscn`](./scenes/exp_gem.tscn)
-  - Scene viên kinh nghiệm rơi ra từ zombie
+  - EXP gem scene
 - [`scenes/death_effect.tscn`](./scenes/death_effect.tscn)
-  - Hiệu ứng khi zombie chết
+  - Zombie death effect
 
-## 3. Kiến Trúc Script
+## 3. Script Architecture
 
 ### 3.1 [`scripts/main.gd`](./scripts/main.gd)
 
-Vai trò:
-- Điều phối game chính
-- Spawn zombie theo timer
-- Cập nhật UI
-- Quản lý điểm, EXP, level
+Role:
+- Main gameplay coordinator
+- Spawns zombies
+- Manages score, EXP, level, and HUD
+- Handles upgrade selection and game over flow
 
-Chức năng chính:
-- Lấy tham chiếu tới player, timer, UI
-- Tạo zombie ở khoảng cách ngẫu nhiên quanh player
-- Tăng điểm khi zombie chết
-- Tăng EXP và xử lý level up
+Key behavior:
+- Spawns zombies around the player at random angles
+- Chooses zombie type based on level
+- Adds score when zombies die
+- Adds EXP when EXP gems or zombies report rewards
+- Opens upgrade menu on level up
+- Shows game over menu when the player dies
 
 ### 3.2 [`scripts/player.gd`](./scripts/player.gd)
 
-Vai trò:
-- Điều khiển người chơi
-- Bắn đạn tự động
-- Nhận sát thương
+Role:
+- Player controller
+- Auto-shooting unit
+- Damage receiver
 
-Chức năng chính:
-- Di chuyển bằng `move_left`, `move_right`, `move_up`, `move_down`
-- Xoay theo hướng đang di chuyển
-- Phát tín hiệu `hp_changed`
-- Phát tín hiệu `died`
-- Tìm zombie gần nhất và bắn đạn vào mục tiêu đó
-- Hiệu ứng rung/đổi màu khi bị đánh
+Player stats:
+- `speed`
+- `max_hp`
+- `damage`
+- `shoot_rate`
+- `bullet_speed`
+- `bullet_life_time`
+
+Key behavior:
+- Moves with `move_left`, `move_right`, `move_up`, `move_down`
+- Auto-fires at the nearest zombie
+- Emits `hp_changed`
+- Emits `died` instead of reloading the scene directly
 
 ### 3.3 [`scripts/zombie.gd`](./scripts/zombie.gd)
 
-Vai trò:
-- Logic AI của zombie
+Role:
+- Zombie AI and combat logic
 
-Chức năng chính:
-- Tự tìm player trong group `player`
-- Di chuyển về phía player
-- Có knockback khi bị bắn
-- Khi chết:
-  - tạo death effect
-  - cộng điểm cho `Main`
-  - spawn EXP gem
-  - tự xóa khỏi scene
+Zombie types:
+- `normal`
+- `fast`
+- `tank`
 
-### 3.4 [`scripts/bullet.gd`](./scripts/bullet.gd)
+Each type has its own stats:
+- speed
+- max HP
+- damage
+- EXP value
+- score value
+- knockback strength
 
-Vai trò:
-- Logic viên đạn của player
+Key behavior:
+- Chases the player
+- Takes bullet damage
+- Applies knockback when hit
+- Attacks the player when in range
+- Drops EXP gem on death
+- Adds score and EXP through `Main`
 
-Chức năng chính:
-- Di chuyển theo vector `direction`
-- Tự hủy sau một khoảng thời gian
-- Khi chạm zombie thì gây damage và biến mất
+### 3.4 [`scripts/brute_boss.gd`](./scripts/brute_boss.gd)
 
-### 3.5 [`scripts/exp_gem.gd`](./scripts/exp_gem.gd)
+Role:
+- Boss AI and combat logic for Brute Zombie
 
-Vai trò:
-- Logic của EXP gem
+Key behavior:
+- Chases the player
+- Uses charge, slam, and summon skills
+- Spawns zombie minions during summon
+- Gives larger score and EXP rewards
+- Notifies `Main` when defeated
 
-Chức năng chính:
-- Lắc nhẹ bằng animation đơn giản
-- Hút về phía player khi đứng gần
-- Khi chạm player thì cộng EXP và tự hủy
+### 3.5 [`scripts/bullet.gd`](./scripts/bullet.gd)
 
-### 3.6 [`scripts/death_effect.gd`](./scripts/death_effect.gd)
+Role:
+- Player projectile logic
 
-Vai trò:
-- Hiệu ứng hình ảnh khi zombie chết
+Key behavior:
+- Moves in a normalized direction
+- Can be configured with `configure(...)`
+- Carries bullet speed, damage, and lifetime
+- Damages zombies on collision
 
-Chức năng chính:
-- Tạo hình đơn giản bằng `Polygon2D`
-- Tween scale và alpha
-- Tự hủy sau khi animation kết thúc
+### 3.6 [`scripts/exp_gem.gd`](./scripts/exp_gem.gd)
 
-## 4. Luồng Gameplay Hiện Tại
+Role:
+- EXP pickup logic
 
-1. Game mở scene `Main`
-2. Player xuất hiện
-3. Timer trong `Main` định kỳ spawn zombie
-4. Zombie chạy về phía player
-5. Player tự động bắn đạn vào zombie gần nhất
-6. Zombie bị trúng đạn mất máu và nhận knockback
-7. Zombie chết sẽ:
-   - tạo hiệu ứng chết
-   - rơi EXP gem
-   - cộng điểm
-8. Player nhặt EXP gem để lên cấp
-9. Khi đủ EXP:
-   - level tăng
-   - ngưỡng EXP tiếp theo tăng
-   - speed của player tăng
+Key behavior:
+- Stores `exp_value`
+- Floats visually
+- Moves toward the player when close
+- Collects on contact or when close enough
+- Calls `Main.add_exp(exp_value)`
 
-## 5. Tính Năng Hiện Có
+### 3.7 [`scripts/game_over_menu.gd`](./scripts/game_over_menu.gd)
 
-- Di chuyển người chơi bằng bàn phím
-- Camera gắn theo player
-- Player tự động bắn theo zombie gần nhất
-- Zombie đuổi theo player
-- Zombie có máu, chết và tạo hiệu ứng
-- Zombie rơi EXP gem khi chết
-- Hệ thống điểm số
-- Hệ thống EXP và level up
-- Tăng tốc độ player khi lên level
-- Hiệu ứng visual đơn giản bằng `Polygon2D`
-- Có group `player` và `zombie` để tìm mục tiêu
+Role:
+- Game over UI
 
-## 6. Input Hiện Có
+Key behavior:
+- Shows final score and level
+- Emits `restart_pressed`
 
-Trong `project.godot`:
+### 3.8 [`scripts/upgrade_menu.gd`](./scripts/upgrade_menu.gd)
 
-- `move_up`: `W` hoặc phím mũi tên lên
-- `move_down`: `S` hoặc phím mũi tên xuống
-- `move_left`: `A` hoặc phím mũi tên trái
-- `move_right`: `D` hoặc phím mũi tên phải
+Role:
+- Level-up upgrade UI
 
-## 7. Layer Va Chạm
+Key behavior:
+- Displays 3 upgrade choices
+- Emits `upgrade_selected`
+- Runs while the game is paused
 
-Project đang đặt các layer vật lý 2D:
+## 4. Gameplay Flow
+
+1. Game starts in `Main`
+2. Player spawns
+3. Spawn timer creates zombies around the player
+4. Zombie types are selected based on level
+5. Player auto-shoots the nearest zombie
+6. Bullets damage zombies and apply knockback
+7. Zombies chase the player and deal damage in range
+8. Zombie death triggers:
+   - score increase
+   - EXP gain
+   - EXP gem spawn
+   - death effect spawn
+9. Boss waves on wave 5 and wave 10 spawn Brute Zombie
+10. Boss can charge, slam, and summon minions
+11. EXP gems move toward the player when close
+12. When EXP reaches the level threshold:
+   - game pauses
+   - upgrade menu opens
+   - player picks one upgrade
+13. When player HP reaches 0:
+   - player emits `died`
+   - `Main` stops spawning
+   - game over menu appears
+
+## 5. Current Features
+
+- Player movement
+- Auto-target shooting
+- Bullet damage, speed, and lifetime are upgradeable
+- Player HP, damage, speed, and firing rate are upgradeable
+- Zombie types: normal, fast, tank
+- Boss waves: mini boss on wave 5, full boss on wave 10
+- Boss skills: charge, slam, summon
+- Zombie score and EXP rewards
+- Zombie knockback
+- Zombie attack cooldown
+- EXP gems attract to player
+- Level-up upgrade menu
+- Game over menu with restart
+- HUD laid out in the top-left area
+
+## 6. Input
+
+Configured in `project.godot`:
+
+- `move_up`: `W` or Up Arrow
+- `move_down`: `S` or Down Arrow
+- `move_left`: `A` or Left Arrow
+- `move_right`: `D` or Right Arrow
+
+## 7. Collision Layers
+
+Current 2D physics layers:
 
 - Layer 1: Player
 - Layer 2: Zombie
@@ -156,18 +207,19 @@ Project đang đặt các layer vật lý 2D:
 - Layer 4: Item
 - Layer 5: EnemyAttack
 
-## 8. Ghi Chú Kỹ Thuật
+## 8. Technical Notes
 
-- Game đang dùng placeholder visuals bằng `Polygon2D`, chưa dùng sprite art thật.
-- Nhiều đối tượng được điều khiển bằng `group` để tìm kiếm và tương tác nhanh.
-- `Main` đóng vai trò trung tâm điều phối các hệ thống gameplay.
+- The project uses placeholder visuals with `Polygon2D`.
+- Most gameplay objects use groups like `player` and `zombie`.
+- `Main` is the central gameplay coordinator.
+- `Player` no longer restarts the scene directly when dying.
+- `Main` now owns the restart and game over flow.
 
-## 9. Hướng Mở Rộng Đề Xuất
+## 9. Suggested Next Extensions
 
-- Thêm nhiều loại zombie
-- Thêm hệ thống nâng cấp khi lên level
-- Thêm UI đẹp hơn cho HP, Score, EXP
-- Thêm âm thanh cho bắn, trúng đạn, nhặt EXP, chết
-- Thêm menu chính, pause, game over
-- Thêm spawn theo wave hoặc tăng độ khó theo thời gian
-
+- Add more zombie types
+- Add more upgrade choices
+- Add bullet piercing or critical hits
+- Improve HUD styling
+- Add audio effects
+- Add waves or difficulty scaling over time
