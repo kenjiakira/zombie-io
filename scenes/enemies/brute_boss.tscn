@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://scripts/enemies/brute_boss.gd" id="1_boss"]
+[ext_resource type="PackedScene" path="res://scenes/items/exp_gem.tscn" id="2_gem"]
+[ext_resource type="PackedScene" path="res://scenes/effects/death_effect.tscn" id="3_death"]
+[ext_resource type="PackedScene" path="res://scenes/effects/death_burst.tscn" id="4_burst"]
+[ext_resource type="PackedScene" path="res://scenes/items/weapon_drop.tscn" id="5_wdrop"]
+[ext_resource type="PackedScene" path="res://scenes/items/rare_drop.tscn" id="6_rare"]
+[ext_resource type="PackedScene" path="res://scenes/effects/hit_flash.tscn" id="7_hit"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_boss"]
+radius = 34.0
+
+[node name="BruteBoss" type="CharacterBody2D"]
+collision_layer = 2
+collision_mask = 1
+script = ExtResource("1_boss")
+exp_gem_scene = ExtResource("2_gem")
+weapon_drop_scene = ExtResource("5_wdrop")
+death_effect_scene = ExtResource("3_death")
+death_burst_scene = ExtResource("4_burst")
+rare_drop_scene = ExtResource("6_rare")
+hit_flash_scene = ExtResource("7_hit")
+
+[node name="Body" type="Polygon2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_boss")

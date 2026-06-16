@@ -1,6 +1,6 @@
-[gd_scene format=3 uid="uid://dhyajas222tc4"]
+[gd_scene format=3 uid="uid://b3y4ssrs6a711"]
 
-[ext_resource type="Script" uid="uid://be8a4o1tphcr6" path="res://scripts/exp_gem.gd" id="1_gfcje"]
+[ext_resource type="Script" path="res://scripts/exp_gem.gd" id="1_gfcje"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_gfcje"]
 radius = 9.0

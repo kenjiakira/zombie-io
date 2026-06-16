@@ -1,8 +1,9 @@
-[gd_scene format=3 uid="uid://743ykr2pe8ym"]
+[gd_scene format=3 uid="uid://dr08rfpqwabu1"]
 
-[ext_resource type="Script" uid="uid://b8iksv2hoo4xh" path="res://scripts/zombie.gd" id="1_1vlb3"]
-[ext_resource type="PackedScene" uid="uid://dhyajas222tc4" path="res://scenes/exp_gem.tscn" id="2_httt1"]
-[ext_resource type="PackedScene" uid="uid://cuc7r18lk457x" path="res://scenes/death_effect.tscn" id="3_xepks"]
+[ext_resource type="Script" path="res://scripts/zombie.gd" id="1_1vlb3"]
+[ext_resource type="PackedScene" path="res://scenes/exp_gem.tscn" id="2_httt1"]
+[ext_resource type="PackedScene" path="res://scenes/death_burst.tscn" id="3_burst"]
+[ext_resource type="PackedScene" path="res://scenes/death_effect.tscn" id="3_xepks"]
 [ext_resource type="PackedScene" path="res://scenes/weapon_drop.tscn" id="4_wdrop"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_httt1"]
@@ -18,6 +19,7 @@ script = ExtResource("1_1vlb3")
 exp_gem_scene = ExtResource("2_httt1")
 weapon_drop_scene = ExtResource("4_wdrop")
 death_effect_scene = ExtResource("3_xepks")
+death_burst_scene = ExtResource("3_burst")
 
 [node name="Body" type="Polygon2D" parent="." unique_id=1411216083]
 

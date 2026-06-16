@@ -1,7 +1,7 @@
-[gd_scene format=3 uid="uid://co542xv2vy7bk"]
+[gd_scene format=3 uid="uid://cb4xd5dvvaiq1"]
 
-[ext_resource type="Script" uid="uid://u126roel8imi" path="res://scripts/player.gd" id="1_3vyb7"]
-[ext_resource type="PackedScene" uid="uid://dou2gcl338s7q" path="res://scenes/bullet.tscn" id="2_g2els"]
+[ext_resource type="Script" path="res://scripts/player.gd" id="1_3vyb7"]
+[ext_resource type="PackedScene" path="res://scenes/bullet.tscn" id="2_g2els"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_g2els"]
 radius = 14.0

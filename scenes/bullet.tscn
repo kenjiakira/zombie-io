@@ -1,6 +1,7 @@
-[gd_scene format=3 uid="uid://dou2gcl338s7q"]
+[gd_scene format=3 uid="uid://c033rfpgru7gs"]
 
 [ext_resource type="Script" path="res://scripts/bullet.gd" id="1_bulletgd"]
+[ext_resource type="PackedScene" uid="uid://ieo80f4im48t" path="res://scenes/damage_number.tscn" id="2_dmgnum"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_h1aey"]
 radius = 5.0
@@ -9,6 +10,7 @@ radius = 5.0
 collision_layer = 4
 collision_mask = 2
 script = ExtResource("1_bulletgd")
+damage_number_scene = ExtResource("2_dmgnum")
 
 [node name="Body" type="Polygon2D" parent="." unique_id=227026656]
 
