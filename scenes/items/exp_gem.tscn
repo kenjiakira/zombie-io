@@ -12,4 +12,5 @@ script = ExtResource("1_gem")
 [node name="Body" type="Polygon2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+visible = false
 shape = SubResource("CircleShape2D_gem")

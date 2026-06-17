@@ -26,12 +26,14 @@ hit_flash_scene = ExtResource("6_hit")
 [node name="Body" type="Polygon2D" parent="."]
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+visible = false
 shape = SubResource("CircleShape2D_body")
 
 [node name="AttackArea" type="Area2D" parent="."]
 collision_layer = 16
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="AttackArea"]
+visible = false
 shape = SubResource("CircleShape2D_attack")
 
 [node name="DamageTimer" type="Timer" parent="."]

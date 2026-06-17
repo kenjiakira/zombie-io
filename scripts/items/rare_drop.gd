@@ -1,12 +1,8 @@
 extends Area2D
 
-const RARE_WEAPON_COLORS := {
-	"shotgun": Color(1.0, 0.8, 0.35),
-	"smg": Color(0.45, 1.0, 0.55),
-	"rifle": Color(0.55, 0.8, 1.0)
-}
+const WeaponDatabase = preload("res://scripts/data/weapon_database.gd")
 
-@export var rare_weapon_id: String = "rifle"
+@export var rare_weapon_id: String = "sniper"
 
 @onready var body: Polygon2D = $Body
 
@@ -37,7 +33,7 @@ func _setup_visual():
 		Vector2(0, 16),
 		Vector2(-14, 0)
 	])
-	body.color = RARE_WEAPON_COLORS.get(rare_weapon_id, Color(1.0, 0.85, 0.45))
+	body.color = WeaponDatabase.get_weapon_color(rare_weapon_id)
 
 func _on_body_entered(body_hit):
 	if body_hit.is_in_group("player"):

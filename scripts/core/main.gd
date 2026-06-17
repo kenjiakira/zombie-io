@@ -15,6 +15,7 @@ extends Node2D
 @onready var hp_bar: ProgressBar = $CanvasLayer/HUD/HPBar
 @onready var hp_text: Label = $CanvasLayer/HUD/HPText
 @onready var weapon_text: Label = $CanvasLayer/HUD/WeaponLabel
+@onready var ammo_text: Label = $CanvasLayer/HUD/AmmoLabel
 @onready var wave_text: Label = $CanvasLayer/HUD/WaveLabel
 @onready var time_text: Label = $CanvasLayer/HUD/TimeLabel
 @onready var enemies_text: Label = $CanvasLayer/HUD/EnemiesLabel
@@ -47,6 +48,10 @@ func _ready():
 		player.died.connect(_on_player_died)
 		if player.has_signal("weapon_changed"):
 			player.weapon_changed.connect(_on_player_weapon_changed)
+		if player.has_signal("ammo_changed"):
+			player.ammo_changed.connect(_on_player_ammo_changed)
+		if player.has_signal("reload_state_changed"):
+			player.reload_state_changed.connect(_on_player_reload_state_changed)
 
 	if wave_manager != null:
 		wave_manager.wave_changed.connect(_on_wave_changed)
@@ -208,6 +213,12 @@ func _on_player_hp_changed(_current_hp, _max_hp):
 func _on_player_weapon_changed(_weapon_id, _weapon_name):
 	update_ui()
 
+func _on_player_ammo_changed(_current_ammo, _reserve_ammo, _magazine_size):
+	update_ui()
+
+func _on_player_reload_state_changed(_is_reloading):
+	update_ui()
+
 func update_ui():
 	if player == null:
 		return
@@ -219,6 +230,14 @@ func update_ui():
 
 	if player.has_method("get_current_weapon_name"):
 		weapon_text.text = "Weapon: " + player.get_current_weapon_name()
+		if ammo_text != null:
+			var ammo_line = ""
+			if player.has_method("get_current_ammo") and player.has_method("get_current_reserve_ammo") and player.has_method("get_current_magazine_size"):
+				ammo_line = str(player.get_current_ammo()) + "/" + str(player.get_current_magazine_size()) + " | " + str(player.get_current_reserve_ammo())
+			if player.has_method("is_current_weapon_reloading") and player.is_current_weapon_reloading():
+				ammo_line = "Reloading..."
+			if ammo_line != "":
+				ammo_text.text = "Ammo: " + ammo_line
 
 	if wave_manager != null:
 		if wave_text != null:

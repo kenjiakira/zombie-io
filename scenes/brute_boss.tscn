@@ -1,9 +1,9 @@
-[gd_scene format=3 uid="uid://da0w6b44k7xh8"]
+[gd_scene format=3 uid="uid://b5vwndft06y81"]
 
 [ext_resource type="Script" path="res://scripts/brute_boss.gd" id="1_boss"]
-[ext_resource type="PackedScene" uid="uid://b3y4ssrs6a711" path="res://scenes/exp_gem.tscn" id="3_gem"]
+[ext_resource type="PackedScene" uid="uid://bgl18g0xyyp5o" path="res://scenes/exp_gem.tscn" id="3_gem"]
 [ext_resource type="PackedScene" path="res://scenes/death_burst.tscn" id="4_burst"]
-[ext_resource type="PackedScene" uid="uid://gh14oubcfth4" path="res://scenes/death_effect.tscn" id="4_death"]
+[ext_resource type="PackedScene" uid="uid://dl6q2yov5miwv" path="res://scenes/death_effect.tscn" id="4_death"]
 [ext_resource type="PackedScene" path="res://scenes/weapon_drop.tscn" id="5_wdrop"]
 [ext_resource type="PackedScene" path="res://scenes/rare_drop.tscn" id="6_rare"]
 

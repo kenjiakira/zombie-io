@@ -1,39 +1,39 @@
 [gd_scene format=3 uid="uid://ds5h6mlaclxi1"]
 
-[ext_resource type="Script" path="res://scripts/core/main.gd" id="1_main"]
+[ext_resource type="Script" uid="uid://dut0cj07kjjp8" path="res://scripts/core/main.gd" id="1_main"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/zombie.tscn" id="2_zombie"]
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="3_player"]
 [ext_resource type="PackedScene" path="res://scenes/enemies/brute_boss.tscn" id="4_boss"]
 [ext_resource type="PackedScene" path="res://scenes/ui/game_over_menu.tscn" id="5_gameover"]
 [ext_resource type="PackedScene" path="res://scenes/ui/upgrade_menu.tscn" id="6_upgrade"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="7_hud"]
-[ext_resource type="Script" path="res://scripts/managers/wave_manager.gd" id="8_wave"]
-[ext_resource type="Script" path="res://scripts/managers/spawn_manager.gd" id="9_spawn"]
-[ext_resource type="Script" path="res://scripts/managers/vfx_manager.gd" id="10_vfx"]
-[ext_resource type="Script" path="res://scripts/managers/audio_manager.gd" id="11_audio"]
-[ext_resource type="Script" path="res://scripts/managers/upgrade_manager.gd" id="17_upgrade_mgr"]
+[ext_resource type="Script" uid="uid://daaj13ax72lbn" path="res://scripts/managers/wave_manager.gd" id="8_wave"]
+[ext_resource type="Script" uid="uid://dl4h2vt0c6thq" path="res://scripts/managers/spawn_manager.gd" id="9_spawn"]
+[ext_resource type="Script" uid="uid://cbw0lc21err0d" path="res://scripts/managers/vfx_manager.gd" id="10_vfx"]
+[ext_resource type="Script" uid="uid://mn0sq2n0vc3m" path="res://scripts/managers/audio_manager.gd" id="11_audio"]
 [ext_resource type="PackedScene" path="res://scenes/effects/damage_number.tscn" id="12_dmgnum"]
 [ext_resource type="PackedScene" path="res://scenes/effects/death_effect.tscn" id="13_death"]
 [ext_resource type="PackedScene" path="res://scenes/effects/death_burst.tscn" id="14_burst"]
 [ext_resource type="PackedScene" path="res://scenes/effects/hit_flash.tscn" id="15_hit"]
 [ext_resource type="PackedScene" path="res://scenes/items/rare_drop.tscn" id="16_rare"]
+[ext_resource type="Script" uid="uid://clnfvpm0omhc3" path="res://scripts/managers/upgrade_manager.gd" id="17_upgrade_mgr"]
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" unique_id=406886849]
 script = ExtResource("1_main")
 zombie_scene = ExtResource("2_zombie")
 boss_scene = ExtResource("4_boss")
 
-[node name="Player" parent="." instance=ExtResource("3_player")]
+[node name="Player" parent="." unique_id=55831353 instance=ExtResource("3_player")]
 
-[node name="WaveManager" type="Node" parent="."]
+[node name="WaveManager" type="Node" parent="." unique_id=1376087419]
 script = ExtResource("8_wave")
 
-[node name="SpawnManager" type="Node" parent="."]
+[node name="SpawnManager" type="Node" parent="." unique_id=2146644054]
 script = ExtResource("9_spawn")
 zombie_scene = ExtResource("2_zombie")
 boss_scene = ExtResource("4_boss")
 
-[node name="VFXManager" type="Node" parent="."]
+[node name="VFXManager" type="Node" parent="." unique_id=1667612989]
 script = ExtResource("10_vfx")
 damage_number_scene = ExtResource("12_dmgnum")
 death_effect_scene = ExtResource("13_death")
@@ -41,18 +41,20 @@ death_burst_scene = ExtResource("14_burst")
 hit_flash_scene = ExtResource("15_hit")
 rare_drop_scene = ExtResource("16_rare")
 
-[node name="UpgradeManager" type="Node" parent="."]
+[node name="UpgradeManager" type="Node" parent="." unique_id=1950360146]
 script = ExtResource("17_upgrade_mgr")
 
-[node name="AudioManager" type="Node" parent="."]
+[node name="AudioManager" type="Node" parent="." unique_id=1228909719]
 script = ExtResource("11_audio")
 
-[node name="ZombieContainer" type="Node2D" parent="."]
+[node name="ZombieContainer" type="Node2D" parent="." unique_id=1399973397]
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=161955498]
 
-[node name="HUD" parent="CanvasLayer" instance=ExtResource("7_hud")]
+[node name="HUD" parent="CanvasLayer" unique_id=437966696 instance=ExtResource("7_hud")]
+layout_mode = 3
+anchors_preset = 0
 
-[node name="GameOverMenu" parent="CanvasLayer" instance=ExtResource("5_gameover")]
+[node name="GameOverMenu" parent="CanvasLayer" unique_id=228755220 instance=ExtResource("5_gameover")]
 
-[node name="UpgradeMenu" parent="CanvasLayer" instance=ExtResource("6_upgrade")]
+[node name="UpgradeMenu" parent="CanvasLayer" unique_id=109347035 instance=ExtResource("6_upgrade")]

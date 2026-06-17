@@ -1,357 +1,19 @@
 # ZombieIO Architecture
 
-## 1. Mục tiêu kiến trúc
-
-ZombieIO được tổ chức theo kiểu scene-driven của Godot:
-- Mỗi thực thể gameplay là một scene riêng.
-- Logic chia theo trách nhiệm rõ ràng: điều phối, AI, đạn, vật phẩm, UI.
-- Giao tiếp giữa các phần chủ yếu qua signal và method công khai.
-
-Thiết kế hiện tại ưu tiên:
-- Dễ mở rộng thêm zombie, boss, weapon, upgrade, hiệu ứng.
-- Tách UI khỏi logic gameplay.
-- Giữ `Main` làm trung tâm điều phối, còn entity tự xử lý hành vi của mình.
-
-## 2. Cấu trúc thư mục
-
-- `scenes/`: scene Godot cho player, zombie, boss, bullet, gem, effect, drop.
-- `scripts/`: gameplay logic và UI logic.
-- `project.godot`: input, physics layers, project settings.
-
-## 3. Tổng quan runtime
-
-Luồng chạy chính:
-1. `main.tscn` được load.
-2. `Main` khởi tạo player, wave manager và UI.
-3. `WaveManager` bắt đầu wave đầu tiên.
-4. `WaveManager` yêu cầu spawn zombie hoặc boss.
-5. `Main` tạo entity từ PackedScene và gắn vào world.
-6. Player tự động tìm mục tiêu gần nhất và bắn.
-7. Bullet trúng zombie, hiện damage number và hit flash.
-8. Zombie/Boss bị knockback, nhận sát thương, chết hoặc kích hoạt explode.
-9. Khi có EXP đủ ngưỡng, game tạm dừng và mở upgrade menu.
-10. Khi player chết, game over menu xuất hiện.
-
-## 4. Scene tree chính
-
-`scenes/main.tscn` là root scene của game. Cấu trúc hiện tại:
-- `Main` `Node2D`
-  - `Player`
-  - `WaveManager`
-  - `ZombieContainer`
-  - `CanvasLayer`
-    - `HPBar`
-    - `HPText`
-    - `WeaponLabel`
-    - `WaveLabel`
-    - `TimeLabel`
-    - `EnemiesLabel`
-    - `ScoreLabel`
-    - `LevelLabel`
-    - `UpgradeMenu`
-    - `GameOverPanel`
-
-Player scene hiện có `Camera2D` gắn kèm để hỗ trợ shake khi boss chết.
-
-## 5. Các lớp trách nhiệm
-
-### 5.1 `scripts/main.gd`
-
-Vai trò:
-- Điều phối gameplay cấp cao.
-- Tạo zombie/boss theo yêu cầu của `WaveManager`.
-- Quản lý score, EXP, level, upgrade points.
-- Đồng bộ UI.
-- Xử lý game over, restart và camera shake.
-
-Điểm đáng chú ý:
-- `Main` không xử lý AI hay combat chi tiết.
-- `Main` chỉ kết nối và truyền sự kiện giữa các subsystem.
-- `Main` có `shake_camera(strength, duration)` để boss death tạo rung nhẹ.
-
-### 5.2 `scripts/wave_manager.gd`
-
-Vai trò:
-- Điều khiển nhịp wave.
-- Quyết định số lượng enemy, tốc độ spawn, tỷ lệ loại zombie.
-- Phát tín hiệu yêu cầu spawn zombie hoặc boss.
-
-Điểm đáng chú ý:
-- Wave được mô tả bằng config trả về từ `_get_wave_config()`.
-- Mỗi wave có thể có boss riêng.
-- Hiện wave config đã có thêm `exploder`.
-- Khi hết quái và hết lượt spawn, wave tiếp theo được kích hoạt sau thời gian nghỉ.
-
-### 5.3 `scripts/player.gd`
-
-Vai trò:
-- Điều khiển người chơi.
-- Tự động tìm mục tiêu gần nhất và bắn.
-- Quản lý weapon system và upgrade weapon hiện tại.
-- Phát signal khi HP thay đổi, khi chết, và khi đổi weapon.
-
-Weapon system:
-- Weapon mặc định: `pistol`.
-- Weapon hiện có: `pistol`, `shotgun`, `smg`, `rifle`.
-- Mỗi weapon có các tham số:
-  - `shoot_rate`
-  - `bullet_speed`
-  - `bullet_damage`
-  - `bullet_life_time`
-  - `projectile_count`
-  - `spread_degrees`
-
-### 5.4 `scripts/bullet.gd`
-
-Vai trò:
-- Đạn của player.
-- Bay theo hướng đã cấu hình.
-- Gây damage cho zombie khi va chạm.
-- Spawn damage number tại vị trí zombie bị trúng.
-
-Điểm đáng chú ý:
-- Bullet nhận cấu hình qua `configure(...)`.
-- Bullet tự hủy sau `life_time`.
-- Bullet hỗ trợ crit nhẹ qua `critical_chance`.
-
-### 5.5 `scripts/damage_number.gd`
-
-Vai trò:
-- Hiển thị số damage bay lên từ đầu zombie.
-
-Hành vi:
-- Spawn tại vị trí zombie.
-- Chỉ pop nhẹ và fade out tại chỗ.
-- Tự xóa sau `0.5s`.
-- Có style riêng cho crit.
-
-### 5.6 `scripts/zombie.gd`
-
-Vai trò:
-- Điều khiển zombie thường và các biến thể zombie.
-- Chạy AI truy đuổi player.
-- Tự attack khi vào phạm vi.
-- Chết thì sinh reward và notify hệ thống.
-
-Các loại zombie hiện có:
-- `normal`
-- `fast`
-- `tank`
-- `exploder`
-- `mini_boss`
-- `boss`
-
-Mỗi loại có bộ chỉ số riêng:
-- speed
-- max HP
-- damage
-- EXP reward
-- score reward
-- knockback
-- attack cooldown
-- attack range
-- xác suất rơi weapon
-
-Zombie death flow:
-- Spawn death effect.
-- Spawn death burst nhỏ.
-- Cộng score cho `Main`.
-- Cộng EXP cho `Main`.
-- Báo cho `WaveManager`.
-- Spawn EXP gem.
-- Có thể rơi weapon drop.
-
-Exploder Zombie:
-- Chạy nhanh tới player.
-- Khi đủ gần sẽ self-destruct.
-- Gây damage vùng nhỏ.
-- Có hit flash, knockback và burst riêng.
-
-### 5.7 `scripts/brute_boss.gd`
-
-Vai trò:
-- Boss AI cho Brute Zombie.
-- Dùng state machine đơn giản để chuyển giữa chase, charge, slam, summon, recover.
-
-Hành vi chính:
-- `chase`: đuổi theo player.
-- `charge`: lao nhanh và gây damage khi chạm.
-- `slam_windup`: nạp đòn trước khi gây sát thương diện rộng.
-- `recover`: hồi chiêu ngắn sau hành động.
-
-Boss còn có thể:
-- summon minion theo `summon_types`.
-- rơi weapon drop giá trị cao hơn.
-- rơi rare drop.
-- thưởng score/EXP lớn hơn zombie thường.
-- gây camera shake khi chết.
-- spawn death effect lớn hơn.
-- spawn death burst lớn hơn.
-
-### 5.8 `scripts/exp_gem.gd`
-
-Vai trò:
-- Vật phẩm EXP.
-- Tự hút về player khi ở gần.
-- Tự thu thập khi chạm hoặc đủ gần.
-
-Điểm đáng chú ý:
-- Gem không tự tính EXP, chỉ gọi `Main.add_exp(exp_value)`.
-
-### 5.9 `scripts/death_effect.gd`
-
-Vai trò:
-- Hiệu ứng nổ khi zombie hoặc boss chết.
-
-Điểm đáng chú ý:
-- Có biến thể nhẹ cho zombie thường.
-- Có biến thể lớn, màu cam hơn cho boss.
-
-### 5.10 `scripts/death_burst.gd`
-
-Vai trò:
-- Burst particle nhỏ tạo cảm giác combat có lực hơn.
-
-Điểm đáng chú ý:
-- Zombie thường dùng burst nhỏ màu xanh.
-- Boss dùng burst lớn màu cam.
-- Exploder có thể dùng màu cam riêng.
-
-### 5.11 `scripts/rare_drop.gd`
-
-Vai trò:
-- Vật phẩm drop hiếm từ boss.
-- Cho cảm giác “boss chết có phần thưởng xứng đáng”.
-
-### 5.12 `scripts/upgrade_menu.gd`
-
-Vai trò:
-- Hiển thị lựa chọn upgrade khi lên level.
-- Phát signal `upgrade_selected`.
-
-### 5.13 `scripts/game_over_menu.gd`
-
-Vai trò:
-- Hiển thị màn hình kết thúc game.
-- Phát signal `restart_pressed`.
-
-## 6. Dòng chảy dữ liệu
-
-### 6.1 Spawn enemy
-
-1. `WaveManager` quyết định loại enemy cần spawn.
-2. `WaveManager` phát `spawn_zombie_requested` hoặc `spawn_boss_requested`.
-3. `Main` nhận signal và gọi scene tương ứng.
-4. Enemy được add vào `ZombieContainer`.
-5. `WaveManager` được notify rằng enemy đã spawn.
-
-### 6.2 Combat
-
-1. Player tìm zombie gần nhất.
-2. Player bắn bullet theo weapon hiện tại.
-3. Bullet chạm zombie và gây damage.
-4. Zombie nhận sát thương, nháy trắng và bị knockback.
-5. Damage number hiện lên trên đầu zombie.
-6. Nếu HP về 0, zombie chết và trả reward.
-
-### 6.3 Exploder flow
-
-1. `Exploder Zombie` chạy tới gần player.
-2. Khi vào khoảng cách nổ, nó self-destruct.
-3. Gây damage vùng nhỏ.
-4. Spawn hiệu ứng nổ và burst.
-5. Cộng score/EXP như kill bình thường.
-
-### 6.4 Boss death flow
-
-1. Boss về 0 HP.
-2. Spawn death effect lớn.
-3. Spawn burst lớn.
-4. Camera rung nhẹ.
-5. Rơi rare drop.
-6. Cộng score lớn hơn.
-7. Cộng EXP và weapon drop như bình thường.
-
-### 6.5 Level up
-
-1. EXP tăng qua zombie hoặc gem.
-2. Khi đạt ngưỡng `exp_to_next_level`, `Main.level_up()` chạy.
-3. Game cộng `upgrade_points`.
-4. `UpgradeMenu` cập nhật số điểm.
-5. Người chơi chọn upgrade, `Main` áp hiệu ứng vào player.
-
-### 6.6 Game over
-
-1. Player phát `died`.
-2. `Main` hiển thị game over menu.
-3. Game bị pause.
-4. Người chơi bấm restart.
-5. `Main` unpause và reload scene.
-
-## 7. Trạng thái hiện tại của hệ thống
-
-### 7.1 Gameplay đã có
-
-- Di chuyển top-down.
-- Auto-shoot nearest target.
-- Weapon system với nhiều loại súng.
-- Zombie nhiều biến thể.
-- Exploder Zombie tự nổ khi áp sát.
-- Boss có state machine và skill riêng.
-- Damage number khi trúng đạn.
-- Hit flash và knockback rõ hơn.
-- Death effect và death burst.
-- EXP gems hút về player.
-- Level-up và upgrade menu.
-- Game over và restart.
-- HUD hiển thị HP, weapon, wave, time, enemies, score, level.
-
-### 7.2 Kỹ thuật hiện tại
-
-- Dùng `groups` để tìm player và zombie.
-- Dùng `signal` để giảm coupling giữa scene.
-- Dùng `PackedScene` để spawn động.
-- Dùng placeholder visuals bằng `Polygon2D`.
-- `Main` là orchestrator chính.
-
-## 8. Collision Layers
-
-Theo cấu hình hiện tại:
-- Layer 1: Player
-- Layer 2: Zombie
-- Layer 3: Bullet
-- Layer 4: Item
-- Layer 5: EnemyAttack
-
-## 9. Input
-
-Các action trong `project.godot`:
-- `move_up`: `W` hoặc Up Arrow
-- `move_down`: `S` hoặc Down Arrow
-- `move_left`: `A` hoặc Left Arrow
-- `move_right`: `D` hoặc Right Arrow
-
-## 10. Điểm mở rộng tốt
-
-Kiến trúc này phù hợp để mở rộng theo các hướng:
-- Thêm zombie type mới bằng data table.
-- Thêm boss mới bằng `PackedScene` và config riêng.
-- Tách weapon library ra data file nếu muốn cân bằng dễ hơn.
-- Tách wave config ra resource để chỉnh difficulty linh hoạt hơn.
-- Thêm audio, VFX, screen shake, hit stop và UI polish mà không phải sửa nhiều core logic.
-
-## 11. Định hướng V5
-
-V4 đã có core loop ổn. Mục tiêu của V5 là biến game từ một demo gameplay chạy được thành một game có thể mở rộng nội dung nhanh.
-
-### 11.1 Mục tiêu của V5
-
-- Tách logic theo domain rõ ràng hơn.
-- Giảm phụ thuộc giữa gameplay, UI, VFX, audio, data.
-- Thêm content mới mà không phải sửa nhiều file lõi.
-- Chuẩn bị nền cho save/load, balance tuning và thêm mode mới.
-
-### 11.2 Cấu trúc thư mục đề xuất
+## 1. Goals
+
+ZombieIO is structured as a scene-driven Godot game with a clear separation of responsibilities:
+- Gameplay entities live in their own scenes.
+- Core orchestration lives in `Main`.
+- Spawning, waves, VFX, upgrades, and audio are handled by managers.
+- Balance data is kept in dedicated database scripts.
+
+The V5 refactor aims to:
+- Make the game easier to extend with new enemies, weapons, drops, and effects.
+- Reduce coupling between gameplay, UI, VFX, and data.
+- Keep content additions mostly data-driven.
+
+## 2. Current Folder Layout
 
 ```text
 scenes/
@@ -401,6 +63,11 @@ scripts/
     exp_gem.gd
     weapon_drop.gd
     rare_drop.gd
+  effects/
+    damage_number.gd
+    death_effect.gd
+    death_burst.gd
+    hit_flash.gd
   ui/
     hud.gd
     upgrade_menu.gd
@@ -418,39 +85,345 @@ resources/
   upgrades/
 ```
 
-### 11.3 Ý nghĩa của từng lớp mới
+## 3. Runtime Flow
 
-- `core/`: chứa vòng đời game, state toàn cục và save/load.
-- `managers/`: mỗi manager chỉ lo một domain rõ ràng, ví dụ spawn, wave, VFX, audio.
-- `player/`: tách điều khiển di chuyển khỏi weapon logic.
-- `enemies/`: gom AI, stats và boss logic vào một cụm dễ mở rộng.
-- `projectiles/`: mọi thứ bay hoặc gây sát thương theo kiểu đạn.
-- `items/`: loot, gem, drop, rare reward.
-- `ui/`: HUD và các màn hình UI tách biệt.
-- `data/`: data-driven balance layer, giúp thêm content mà ít sửa code.
-- `resources/`: nơi lưu dữ liệu cân bằng theo từng nhóm nội dung.
+1. `scenes/main.tscn` is loaded.
+2. `Main` wires up player, managers, HUD, and menus.
+3. `WaveManager` starts the first wave.
+4. `WaveManager` emits spawn requests for zombies or bosses.
+5. `Main` instantiates scenes and places them into the world container.
+6. Player auto-targets the nearest zombie and shoots.
+7. Bullet hit triggers damage number, hit flash, knockback, and death effects.
+8. Zombie or boss death awards score, EXP, and drops.
+9. Level-up opens the upgrade menu.
+10. Player death opens the game over menu.
 
-### 11.4 Quy tắc refactor nên theo
+## 4. Scene Tree
 
-- Scene không nên tự gọi sâu sang nhau nếu có thể đi qua manager.
-- Stats và balance nên nằm ở data/resource, không hardcode rải rác.
-- VFX, audio và UI nên là hệ phụ trợ, không chen vào core combat.
-- Player và enemy nên giữ logic hành vi riêng, còn spawn/reward đi qua manager.
+`scenes/main.tscn` is the root scene for the game. It contains:
+- `Main` as the top-level controller.
+- `Player`
+- `WaveManager`
+- `SpawnManager`
+- `VFXManager`
+- `UpgradeManager`
+- `AudioManager`
+- `ZombieContainer`
+- `CanvasLayer`
+  - `HUD`
+  - `UpgradeMenu`
+  - `GameOverMenu`
 
-### 11.5 Lợi ích thực tế
+The player scene includes a `Camera2D` so `Main` can apply camera shake on heavy events such as boss death.
 
-- Thêm zombie mới chỉ cần thêm dữ liệu và scene.
-- Thêm boss mới không phải sửa `Main` quá nhiều.
-- Cân bằng game nhanh hơn vì số liệu nằm tập trung.
-- Dễ thêm event, mode, perk, weapon và wave mới.
-- Dễ test từng phần vì trách nhiệm đã tách rõ.
+## 5. Core Responsibilities
 
-## 12. Kết luận
+### 5.1 `scripts/core/main.gd`
 
-Đây là một kiến trúc game nhỏ gọn, thiên về data-driven vừa đủ:
-- `Main` điều phối.
-- `WaveManager` kiểm soát nhịp game.
-- `Player`, `Zombie`, `Boss`, `Bullet`, `EXP Gem` tự xử lý hành vi của mình.
-- UI chỉ lắng nghe và hiển thị.
+`Main` is the orchestration layer.
 
-Với cấu trúc này, bạn có thể mở rộng nội dung khá nhanh mà không phải đụng nhiều vào core loop.
+Responsibilities:
+- Connect player, wave, UI, and manager signals.
+- Spawn zombies, bosses, and VFX through helper methods.
+- Track score, EXP, level, and upgrade points.
+- Handle restart and game over flow.
+- Apply camera shake.
+
+`Main` should not own combat AI or entity-specific behavior. It only routes events and coordinates systems.
+
+### 5.2 `scripts/managers/wave_manager.gd`
+
+`WaveManager` controls the wave loop.
+
+Responsibilities:
+- Decide how many enemies spawn per wave.
+- Pick enemy types using weighted tables.
+- Emit zombie or boss spawn requests.
+- Track alive enemies and wave completion.
+
+Wave definitions are provided by `scripts/data/wave_database.gd`, which keeps wave tuning separate from logic.
+
+### 5.3 `scripts/player/player.gd`
+
+The player scene handles movement, targeting, shooting, HP, and weapon switching.
+
+Responsibilities:
+- Move with top-down input.
+- Auto-fire at the nearest zombie.
+- Maintain current weapon data.
+- Emit `hp_changed`, `died`, and `weapon_changed`.
+
+Weapon data is sourced from `scripts/data/weapon_database.gd`.
+
+### 5.4 `scripts/projectiles/bullet.gd`
+
+Bullets are simple damage projectiles.
+
+Responsibilities:
+- Travel in a configured direction.
+- Deal damage on hit.
+- Spawn damage numbers on impact.
+- Self-destruct after a short lifetime.
+
+### 5.5 `scripts/enemies/zombie.gd`
+
+Zombie is the standard melee enemy with multiple variants.
+
+Current enemy types:
+- `normal`
+- `fast`
+- `tank`
+- `exploder`
+- `mini_boss`
+- `boss`
+
+Responsibilities:
+- Chase the player.
+- Attack when in range.
+- Take damage and apply knockback.
+- Spawn hit flash, death effect, burst, EXP gem, and weapon drop.
+- Notify `Main` and `WaveManager` when killed.
+
+The stats for each variant are pulled from `scripts/data/enemy_database.gd`.
+
+### 5.6 `scripts/enemies/brute_boss.gd`
+
+Brute Boss is a stronger AI-driven enemy with a simple state machine.
+
+States:
+- `chase`
+- `charge`
+- `slam_windup`
+- `recover`
+
+Responsibilities:
+- Chase the player.
+- Charge or slam depending on range.
+- Summon minions.
+- Apply stronger death effects.
+- Spawn rare drops for boss kills.
+
+### 5.7 `scripts/items/exp_gem.gd`
+
+EXP gems are pickups that float and move toward the player when close.
+
+Responsibilities:
+- Attract to the player within a range.
+- Collect on contact or proximity.
+- Call `Main.add_exp(exp_value)`.
+
+### 5.8 `scripts/items/weapon_drop.gd`
+
+Weapon drops are normal loot pickups.
+
+Responsibilities:
+- Float visually.
+- Give the player a weapon when collected.
+
+### 5.9 `scripts/items/rare_drop.gd`
+
+Rare drops are boss reward items.
+
+Responsibilities:
+- Act like a special pickup.
+- Give a high-value or rare weapon reward.
+
+### 5.10 `scripts/effects/damage_number.gd`
+
+Damage numbers are short-lived UI effects.
+
+Responsibilities:
+- Show damage as floating text.
+- Support critical hits.
+- Move slightly upward and fade out.
+
+### 5.11 `scripts/effects/death_effect.gd`
+
+Death effect is the main enemy death burst shape.
+
+Responsibilities:
+- Show a short fade-out burst.
+- Use a stronger variant for bosses.
+
+### 5.12 `scripts/effects/death_burst.gd`
+
+Death burst is the particle-like burst effect used on death.
+
+Responsibilities:
+- Create a small burst around the death position.
+- Use different intensity for normal enemies, bosses, and exploders.
+
+### 5.13 `scripts/effects/hit_flash.gd`
+
+Hit flash is a very short hit feedback effect.
+
+Responsibilities:
+- Flash white or orange on impact.
+- Help make hits feel stronger.
+
+### 5.14 `scripts/managers/vfx_manager.gd`
+
+`VFXManager` centralizes effect spawning.
+
+Responsibilities:
+- Spawn damage numbers.
+- Spawn hit flash.
+- Spawn death effects and death bursts.
+- Spawn rare drops.
+
+This keeps entity scripts from manually handling every effect instantiation path.
+
+### 5.15 `scripts/managers/upgrade_manager.gd`
+
+`UpgradeManager` applies level-up effects to the player.
+
+Responsibilities:
+- Increase damage, speed, fire rate, HP, or other stats.
+- Keep upgrade application logic out of the UI.
+
+### 5.16 `scripts/ui/upgrade_menu.gd`
+
+Upgrade menu is shown on level-up.
+
+Responsibilities:
+- Display a small list of upgrade choices.
+- Emit `upgrade_selected`.
+
+### 5.17 `scripts/ui/game_over_menu.gd`
+
+Game over menu appears when the player dies.
+
+Responsibilities:
+- Show final score and level.
+- Emit `restart_pressed`.
+
+## 6. Data Layer
+
+### 6.1 `scripts/data/weapon_database.gd`
+
+Stores weapon balance data such as:
+- shoot rate
+- bullet speed
+- bullet damage
+- projectile count
+- spread
+
+### 6.2 `scripts/data/enemy_database.gd`
+
+Stores enemy balance data such as:
+- speed
+- HP
+- damage
+- EXP value
+- score value
+- knockback
+- drop chance
+- boss skills
+
+### 6.3 `scripts/data/wave_database.gd`
+
+Provides wave configs such as:
+- total enemies
+- spawn interval
+- weighted enemy tables
+- boss wave markers
+
+### 6.4 `scripts/data/upgrade_database.gd`
+
+Stores the level-up upgrade options shown by the UI.
+
+## 7. Gameplay Flow
+
+### 7.1 Spawn Flow
+
+1. `WaveManager` picks the next enemy type.
+2. `WaveManager` emits a spawn request.
+3. `Main` spawns the scene and adds it to `ZombieContainer`.
+4. `WaveManager` updates alive counts.
+
+### 7.2 Combat Flow
+
+1. Player finds the nearest zombie.
+2. Player fires a bullet.
+3. Bullet hits the enemy.
+4. Enemy takes damage and gets knockback.
+5. VFX plays.
+6. Enemy dies if HP reaches zero.
+
+### 7.3 Death Flow
+
+1. Enemy spawns death effect and burst.
+2. `Main` gets score and EXP updates.
+3. EXP gem and drops may spawn.
+4. `WaveManager` is notified that one enemy died.
+
+### 7.4 Boss Death Flow
+
+1. Boss dies.
+2. Bigger death effect and burst spawn.
+3. Camera shake is applied.
+4. Rare drop may spawn.
+5. Large score and EXP rewards are granted.
+
+### 7.5 Level Up Flow
+
+1. Player gains EXP.
+2. When the threshold is reached, `Main.level_up()` runs.
+3. Upgrade points increase.
+4. Upgrade menu updates.
+5. Player chooses one upgrade.
+
+### 7.6 Game Over Flow
+
+1. Player HP reaches zero.
+2. `Main` shows the game over menu.
+3. The game pauses.
+4. Restart reloads the current scene.
+
+## 8. Technical Notes
+
+- Placeholder visuals use `Polygon2D` so the game can be iterated without final art.
+- Entity identification relies on groups such as `player` and `zombie`.
+- Scene instantiation uses `PackedScene`.
+- Most interactions are event-driven through signals.
+- `Main` remains the central coordinator, not the owner of all gameplay logic.
+
+## 9. Collision Layers
+
+Current gameplay layers are organized as:
+- Player
+- Zombie
+- Bullet
+- Item
+- EnemyAttack
+
+## 10. Input
+
+Configured movement actions:
+- `move_up`: `W` or Up Arrow
+- `move_down`: `S` or Down Arrow
+- `move_left`: `A` or Left Arrow
+- `move_right`: `D` or Right Arrow
+
+## 11. Extension Strategy
+
+This architecture is meant to scale with content additions:
+- Add a zombie type by extending `enemy_database.gd` and the zombie scene logic.
+- Add a boss by creating a new scene and config entry.
+- Add a weapon by updating `weapon_database.gd`.
+- Add a wave pattern by changing `wave_database.gd`.
+- Add a new UI or VFX effect by adding a scene and exposing it in a manager.
+
+The main rule is: put content data in data scripts, keep orchestration in managers, and keep entity behavior inside the entity scene.
+
+## 12. Summary
+
+V5 turns ZombieIO into a cleaner, more expandable game:
+- `Main` orchestrates.
+- `WaveManager` controls pacing.
+- `SpawnManager` creates enemies.
+- `VFXManager` owns effects.
+- `Player`, `Zombie`, `Boss`, `Bullet`, and pickups own their own behavior.
+- UI listens and displays state.
+
+That keeps the codebase small enough to work on quickly, but structured enough to add new content without rewriting the core loop.

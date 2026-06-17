@@ -1,11 +1,6 @@
 extends Area2D
 
-const WEAPON_COLORS := {
-	"pistol": Color(0.65, 0.75, 0.9),
-	"shotgun": Color(0.95, 0.62, 0.28),
-	"smg": Color(0.35, 0.9, 0.45),
-	"rifle": Color(0.4, 0.7, 1.0)
-}
+const WeaponDatabase = preload("res://scripts/data/weapon_database.gd")
 
 @export var weapon_id: String = "pistol"
 
@@ -34,8 +29,7 @@ func _setup_visual():
 	if body == null:
 		return
 
-	var color = WEAPON_COLORS.get(weapon_id, WEAPON_COLORS["pistol"])
-	body.color = color
+	body.color = WeaponDatabase.get_weapon_color(weapon_id)
 	body.polygon = PackedVector2Array([
 		Vector2(0, -14),
 		Vector2(12, 0),

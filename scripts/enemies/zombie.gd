@@ -28,6 +28,7 @@ var player: Node2D
 var anim_time: float = 0.0
 var is_hurt_animating: bool = false
 var knockback: Vector2 = Vector2.ZERO
+var keep_distance: float = 24.0
 
 func _ready():
 	_apply_zombie_type(zombie_type)
@@ -59,6 +60,7 @@ func _apply_zombie_type(p_zombie_type: String):
 	knockback_strength = float(zombie_data.get("knockback_strength", 220.0))
 	attack_cooldown = float(zombie_data.get("attack_cooldown", 0.8))
 	attack_range = float(zombie_data.get("attack_range", 32.0))
+	keep_distance = max(attack_range * 0.75, 24.0)
 	base_visual_scale = zombie_data.get("visual_scale", Vector2.ONE)
 
 	if body != null:
@@ -85,10 +87,19 @@ func _physics_process(delta):
 	if player == null or not is_instance_valid(player):
 		return
 
-	var dir = (player.global_position - global_position).normalized()
-	velocity = dir * speed + knockback
+	var to_player = player.global_position - global_position
+	var distance = to_player.length()
+	var dir = to_player.normalized() if distance > 0.001 else Vector2.ZERO
+	var move_velocity = Vector2.ZERO
+
+	if distance > keep_distance:
+		move_velocity = dir * speed
+	elif distance < keep_distance * 0.6:
+		move_velocity = -dir * speed * 0.7
+
+	velocity = move_velocity + knockback
 	move_and_slide()
-	knockback = knockback.move_toward(Vector2.ZERO, 700.0 * delta)
+	knockback = knockback.move_toward(Vector2.ZERO, 900.0 * delta)
 	update_animation(delta, dir)
 	try_attack_player()
 
