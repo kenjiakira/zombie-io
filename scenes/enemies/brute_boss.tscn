@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/items/weapon_drop.tscn" id="5_wdrop"]
 [ext_resource type="PackedScene" path="res://scenes/items/rare_drop.tscn" id="6_rare"]
 [ext_resource type="PackedScene" path="res://scenes/effects/hit_flash.tscn" id="7_hit"]
+[ext_resource type="PackedScene" path="res://scenes/items/ammo_drop.tscn" id="8_ammo"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_boss"]
 radius = 34.0
@@ -17,6 +18,7 @@ collision_mask = 1
 script = ExtResource("1_boss")
 exp_gem_scene = ExtResource("2_gem")
 weapon_drop_scene = ExtResource("5_wdrop")
+ammo_drop_scene = ExtResource("8_ammo")
 death_effect_scene = ExtResource("3_death")
 death_burst_scene = ExtResource("4_burst")
 rare_drop_scene = ExtResource("6_rare")

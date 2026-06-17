@@ -242,6 +242,18 @@ func reload_current_weapon():
 	if shoot_timer != null:
 		shoot_timer.start()
 
+func add_ammo_to_current_weapon(amount: int):
+	if amount <= 0 or weapon_data.is_empty():
+		return
+
+	var state = ammo_state.get(current_weapon_id, {})
+	if state.is_empty():
+		return
+
+	state["reserve_ammo"] = int(state.get("reserve_ammo", 0)) + amount
+	ammo_state[current_weapon_id] = state
+	_emit_ammo_state()
+
 func _create_ammo_state(weapon: Dictionary) -> Dictionary:
 	var magazine_size = max(1, int(weapon.get("magazine_size", 1)))
 	var reserve_ammo = max(0, int(weapon.get("reserve_ammo", 0)))

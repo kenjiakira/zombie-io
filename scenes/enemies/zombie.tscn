@@ -6,6 +6,7 @@
 [ext_resource type="PackedScene" path="res://scenes/effects/death_burst.tscn" id="4_burst"]
 [ext_resource type="PackedScene" path="res://scenes/items/weapon_drop.tscn" id="5_wdrop"]
 [ext_resource type="PackedScene" path="res://scenes/effects/hit_flash.tscn" id="6_hit"]
+[ext_resource type="PackedScene" path="res://scenes/items/ammo_drop.tscn" id="7_ammo"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_body"]
 radius = 15.0
@@ -19,6 +20,7 @@ collision_mask = 3
 script = ExtResource("1_zombie")
 exp_gem_scene = ExtResource("2_gem")
 weapon_drop_scene = ExtResource("5_wdrop")
+ammo_drop_scene = ExtResource("7_ammo")
 death_effect_scene = ExtResource("3_death")
 death_burst_scene = ExtResource("4_burst")
 hit_flash_scene = ExtResource("6_hit")

@@ -192,6 +192,11 @@ func spawn_rare_drop(world_position: Vector2):
 	if vfx_manager != null:
 		vfx_manager.spawn_rare_drop(world_position)
 
+func add_player_ammo(amount: int):
+	if player != null and player.has_method("add_ammo_to_current_weapon"):
+		player.add_ammo_to_current_weapon(amount)
+		update_ui()
+
 func _on_player_died():
 	if game_over_menu != null:
 		game_over_menu.show_game_over(score, level)

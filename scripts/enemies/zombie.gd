@@ -5,6 +5,7 @@ const EnemyDatabase = preload("res://scripts/data/enemy_database.gd")
 @export var zombie_type: String = "normal"
 @export var exp_gem_scene: PackedScene
 @export var weapon_drop_scene: PackedScene
+@export var ammo_drop_scene: PackedScene
 @export var death_effect_scene: PackedScene
 @export var death_burst_scene: PackedScene
 @export var hit_flash_scene: PackedScene
@@ -184,6 +185,7 @@ func die():
 		main.add_child(gem)
 
 	_spawn_weapon_drop(main)
+	_spawn_ammo_drop(main)
 	queue_free()
 
 func _spawn_weapon_drop(main: Node):
@@ -200,6 +202,27 @@ func _spawn_weapon_drop(main: Node):
 	var drop = weapon_drop_scene.instantiate()
 	drop.global_position = global_position
 	drop.weapon_id = weapon_id
+	main.add_child(drop)
+
+func _spawn_ammo_drop(main: Node):
+	var zombie_data = EnemyDatabase.get_enemy_data(zombie_type)
+	var drop_chance = float(zombie_data.get("ammo_drop_chance", 0.0))
+
+	if ammo_drop_scene == null or randf() > drop_chance:
+		return
+
+	var amount_min = int(zombie_data.get("ammo_drop_amount_min", 0))
+	var amount_max = int(zombie_data.get("ammo_drop_amount_max", 0))
+	if amount_max < amount_min:
+		amount_max = amount_min
+
+	var ammo_amount = randi_range(amount_min, amount_max)
+	if ammo_amount <= 0:
+		return
+
+	var drop = ammo_drop_scene.instantiate()
+	drop.global_position = global_position
+	drop.ammo_amount = ammo_amount
 	main.add_child(drop)
 
 func _pick_weapon_drop_id(weights: Dictionary) -> String:
