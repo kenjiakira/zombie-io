@@ -9,6 +9,7 @@ extends Node2D
 @onready var vfx_manager = $VFXManager
 @onready var upgrade_manager = $UpgradeManager
 @onready var zombie_container = $ZombieContainer
+@onready var start_menu = $CanvasLayer/StartMenu
 @onready var game_over_menu = $CanvasLayer/GameOverMenu
 @onready var upgrade_menu = $CanvasLayer/UpgradeMenu
 
@@ -31,6 +32,7 @@ var upgrade_points: int = 0
 var camera_shake_time: float = 0.0
 var camera_shake_duration: float = 0.0
 var camera_shake_strength: float = 0.0
+var game_started: bool = false
 
 func _ready():
 	randomize()
@@ -59,7 +61,6 @@ func _ready():
 		wave_manager.enemies_changed.connect(_on_wave_enemies_changed)
 		wave_manager.spawn_zombie_requested.connect(_on_wave_spawn_zombie_requested)
 		wave_manager.spawn_boss_requested.connect(_on_wave_spawn_boss_requested)
-		wave_manager.start()
 
 	if upgrade_menu != null:
 		upgrade_menu.upgrade_selected.connect(_on_upgrade_selected)
@@ -68,9 +69,20 @@ func _ready():
 	if game_over_menu != null:
 		game_over_menu.restart_pressed.connect(_on_restart_pressed)
 
+	if start_menu != null and start_menu.has_signal("start_pressed"):
+		start_menu.start_pressed.connect(_on_start_pressed)
+
+	if game_over_menu != null and game_over_menu.has_method("hide_game_over"):
+		game_over_menu.hide_game_over()
+
+	_show_start_menu()
+	get_tree().paused = true
 	update_ui()
 
 func _process(delta):
+	if not game_started:
+		return
+
 	if camera_shake_time <= 0.0:
 		if camera != null:
 			camera.offset = Vector2.ZERO
@@ -196,6 +208,21 @@ func add_player_ammo(amount: int):
 	if player != null and player.has_method("add_ammo_to_current_weapon"):
 		player.add_ammo_to_current_weapon(amount)
 		update_ui()
+
+func _on_start_pressed():
+	game_started = true
+	if start_menu != null and start_menu.has_method("hide_start_menu"):
+		start_menu.hide_start_menu()
+	get_tree().paused = false
+	if wave_manager != null:
+		wave_manager.start()
+
+func _show_start_menu():
+	game_started = false
+	if start_menu != null and start_menu.has_method("show_start_menu"):
+		start_menu.show_start_menu()
+	if game_over_menu != null and game_over_menu.has_method("hide_game_over"):
+		game_over_menu.hide_game_over()
 
 func _on_player_died():
 	if game_over_menu != null:

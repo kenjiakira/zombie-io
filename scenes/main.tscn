@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/game_over_menu.tscn" id="5_gameover"]
 [ext_resource type="PackedScene" path="res://scenes/ui/upgrade_menu.tscn" id="6_upgrade"]
 [ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id="7_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/start_menu.tscn" id="18_start"]
 [ext_resource type="Script" uid="uid://daaj13ax72lbn" path="res://scripts/managers/wave_manager.gd" id="8_wave"]
 [ext_resource type="Script" uid="uid://dl4h2vt0c6thq" path="res://scripts/managers/spawn_manager.gd" id="9_spawn"]
 [ext_resource type="Script" uid="uid://cbw0lc21err0d" path="res://scripts/managers/vfx_manager.gd" id="10_vfx"]
@@ -54,6 +55,8 @@ script = ExtResource("11_audio")
 [node name="HUD" parent="CanvasLayer" unique_id=437966696 instance=ExtResource("7_hud")]
 layout_mode = 3
 anchors_preset = 0
+
+[node name="StartMenu" parent="CanvasLayer" unique_id=176541233 instance=ExtResource("18_start")]
 
 [node name="GameOverMenu" parent="CanvasLayer" unique_id=228755220 instance=ExtResource("5_gameover")]
 
