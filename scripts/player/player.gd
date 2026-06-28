@@ -7,6 +7,22 @@ signal ammo_changed(current_ammo, reserve_ammo, magazine_size)
 signal reload_state_changed(is_reloading)
 
 const WeaponDatabase = preload("res://scripts/data/weapon_database.gd")
+const PLAYER_SPRITE_SHEETS := {
+	"idle_down": preload("res://assets/Character/Idle/Character_down_idle-Sheet6.png"),
+	"idle_side": preload("res://assets/Character/Idle/Character_side_idle-Sheet6.png"),
+	"idle_up": preload("res://assets/Character/Idle/Character_up_idle-Sheet6.png"),
+	"run_down": preload("res://assets/Character/Run/Character_down_run-Sheet6.png"),
+	"run_side": preload("res://assets/Character/Run/Character_side_run-Sheet6.png"),
+	"run_up": preload("res://assets/Character/Run/Character_up_run-Sheet6.png")
+}
+const PLAYER_ANIM_FRAME_COUNTS := {
+	"idle_down": 6,
+	"idle_side": 6,
+	"idle_up": 6,
+	"run_down": 6,
+	"run_side": 6,
+	"run_up": 6
+}
 
 @export var speed: float = 230.0
 @export var max_hp: int = 100
@@ -14,12 +30,12 @@ const WeaponDatabase = preload("res://scripts/data/weapon_database.gd")
 @export var bullet_scene: PackedScene
 @export var starting_weapon_id: String = "pistol"
 
-@onready var body: Polygon2D = $Body
+@onready var body: Node2D = $Body
+@onready var animated_sprite: AnimatedSprite2D = $Body/AnimatedSprite2D
 @onready var shoot_timer: Timer = $ShootTimer
 
 var hp: int
 var facing_dir: Vector2 = Vector2.RIGHT
-var anim_time: float = 0.0
 var is_hurt_animating: bool = false
 var current_weapon_id: String = "pistol"
 var weapon_data: Dictionary = {}
@@ -41,19 +57,39 @@ func _ready():
 		add_weapon("pistol")
 		starting_weapon_id = "pistol"
 	equip_weapon(starting_weapon_id)
-	setup_placeholder_visual()
+	_setup_sprite_frames()
+	update_animation(Vector2.ZERO)
 
-func setup_placeholder_visual():
-	if body == null:
+func _setup_sprite_frames():
+	if animated_sprite == null:
 		return
 
-	body.polygon = PackedVector2Array([
-		Vector2(18, 0),
-		Vector2(-12, -12),
-		Vector2(-8, 0),
-		Vector2(-12, 12)
-	])
-	body.color = Color(0.25, 0.75, 1.0)
+	var sprite_frames := SpriteFrames.new()
+	for anim_name in PLAYER_SPRITE_SHEETS.keys():
+		var texture: Texture2D = PLAYER_SPRITE_SHEETS[anim_name]
+		var frame_count: int = PLAYER_ANIM_FRAME_COUNTS[anim_name]
+		sprite_frames.add_animation(anim_name)
+		sprite_frames.set_animation_speed(anim_name, 8.0 if anim_name.begins_with("run_") else 6.0)
+		sprite_frames.set_animation_loop(anim_name, true)
+		_add_sheet_frames(sprite_frames, anim_name, texture, frame_count)
+
+	animated_sprite.sprite_frames = sprite_frames
+	animated_sprite.centered = true
+	animated_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	animated_sprite.play("idle_side")
+
+func _add_sheet_frames(sprite_frames: SpriteFrames, anim_name: String, texture: Texture2D, frame_count: int):
+	if texture == null or frame_count <= 0:
+		return
+
+	var frame_width := texture.get_width() / frame_count
+	var frame_height := texture.get_height()
+
+	for frame_index in range(frame_count):
+		var atlas_texture := AtlasTexture.new()
+		atlas_texture.atlas = texture
+		atlas_texture.region = Rect2(frame_width * frame_index, 0, frame_width, frame_height)
+		sprite_frames.add_frame(anim_name, atlas_texture)
 
 func _physics_process(delta):
 	_handle_weapon_switch_input()
@@ -62,12 +98,10 @@ func _physics_process(delta):
 
 	if input_dir != Vector2.ZERO:
 		facing_dir = input_dir
-		if body != null:
-			body.rotation = facing_dir.angle()
 
 	velocity = input_dir * speed
 	move_and_slide()
-	update_animation(delta, input_dir)
+	update_animation(input_dir)
 
 func _handle_weapon_switch_input():
 	var reload_key_pressed = Input.is_key_pressed(KEY_R)
@@ -97,18 +131,32 @@ func _handle_weapon_switch_input():
 	if not reload_key_pressed:
 		prev_reload_key_pressed = false
 
-func update_animation(delta, input_dir: Vector2):
-	if is_hurt_animating or body == null:
+func update_animation(input_dir: Vector2):
+	if animated_sprite == null:
 		return
 
-	anim_time += delta
+	var is_moving := input_dir.length_squared() > 0.0001
+	var direction := facing_dir if is_moving else facing_dir.normalized()
+	if direction == Vector2.ZERO:
+		direction = Vector2.RIGHT
 
-	if input_dir == Vector2.ZERO:
-		var pulse = 1.0 + sin(anim_time * 4.0) * 0.03
-		body.scale = Vector2(pulse, pulse)
-	else:
-		var bounce = 1.0 + sin(anim_time * 12.0) * 0.06
-		body.scale = Vector2(1.0, bounce)
+	var direction_suffix := _get_direction_suffix(direction)
+	var anim_prefix := "run_" if is_moving else "idle_"
+	var animation_name := anim_prefix + direction_suffix
+
+	animated_sprite.flip_h = direction_suffix == "side" and direction.x < 0.0
+
+	if animated_sprite.animation != animation_name:
+		animated_sprite.play(animation_name)
+	elif not animated_sprite.is_playing():
+		animated_sprite.play()
+
+func _get_direction_suffix(direction: Vector2) -> String:
+	if absf(direction.x) > absf(direction.y):
+		return "side"
+	if direction.y < 0.0:
+		return "up"
+	return "down"
 
 func take_damage(amount: int):
 	hp -= amount
@@ -302,13 +350,15 @@ func play_hurt_animation():
 	is_hurt_animating = true
 
 	if body != null:
-		body.color = Color(1.0, 0.3, 0.3)
-		body.scale = Vector2(1.25, 1.25)
+		body.scale = Vector2(1.12, 1.12)
+	if animated_sprite != null:
+		animated_sprite.modulate = Color(1.0, 0.4, 0.4)
 
 	await get_tree().create_timer(0.08).timeout
 
+	if animated_sprite != null:
+		animated_sprite.modulate = Color.WHITE
 	if body != null:
-		body.color = Color(0.25, 0.75, 1.0)
 		body.scale = Vector2.ONE
 
 	is_hurt_animating = false

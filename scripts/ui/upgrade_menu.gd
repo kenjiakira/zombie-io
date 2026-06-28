@@ -17,7 +17,7 @@ var upgrade_points: int = 0
 
 func _ready():
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	visible = true
+	visible = false
 
 	upgrade_entries = UpgradeDatabase.get_upgrades()
 	button_1.pressed.connect(func(): _choose_upgrade(0))
@@ -35,6 +35,7 @@ func add_upgrade_point(amount: int = 1):
 	set_upgrade_points(upgrade_points + amount)
 
 func _refresh_ui():
+	visible = upgrade_points > 0
 	points_label.text = "Upgrade Points: " + str(upgrade_points)
 
 	button_1.disabled = upgrade_points <= 0
